@@ -9,7 +9,7 @@ use tracing::{debug, info, trace, warn};
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
 use crate::api::Carrier;
-use crate::entity::component::{PositionComponent, PhysicsComponent};
+use crate::entity::component::{PositionComponent, HumanoidComponent};
 use crate::entity::prototype::EntityPrototype;
 use crate::network::Token;
 use crate::ty::WS;
@@ -18,13 +18,19 @@ use crate::{packet, EntityWorld, ServerNetwork};
 packet!(Player(ServerBoundPlayerPacket, ClientBoundPlayerPacket));
 
 pub enum ServerBoundPlayerPacket {
-    SetDir(u32, Vector2D<f32, WS>),
+    SetMove(u32, PlayerCommand),
     Join(),
 }
 
 pub enum ClientBoundPlayerPacket {
     RespondPos(u32, Option<Vector2D<f32, WS>>),
     Joined(Entity)
+}
+
+#[derive(Default, Copy, Clone)]
+pub struct PlayerCommand {
+    pub dir: Vector2D<f32, WS>,
+    pub jumping: bool,
 }
 
 pub(crate) struct PlayerSystem {
@@ -103,12 +109,13 @@ impl PlayerSystem {
         entity: &mut EntityWorld,
     ) {
         match packet {
-            ServerBoundPlayerPacket::SetDir(tick, speed) => {
+            ServerBoundPlayerPacket::SetMove(tick, speed) => {
                 if let Some(player) = self.get_player_entity(token, entity) {
-                    player
-                        .get_mut::<PhysicsComponent>()
-                        .expect("Player does not have velocity")
-                        .vel = speed;
+                    let mut component = player
+                        .get_mut::<HumanoidComponent>()
+                        .expect("Player does not have velocity");
+                    component.dir = speed.dir;
+                    component.jumping = speed.jumping;
                 }  else {
                     trace!("player entity not here");
                 }

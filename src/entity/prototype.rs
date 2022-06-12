@@ -1,12 +1,13 @@
 use crate::api::id::Id;
 use crate::api::prototype::Prototype;
-use crate::entity::component::{PositionComponent, PhysicsComponent, CollisionComponent};
+use crate::entity::component::{PositionComponent, PhysicsComponent, CollisionComponent, HumanoidComponent};
 use hecs::EntityBuilder;
 
 pub struct EntityPrototype {
     pub position: PositionComponent,
     pub velocity: Option<PhysicsComponent>,
     pub collision: Option<CollisionComponent>,
+    pub humanoid: Option<HumanoidComponent>,
 }
 
 impl Prototype for EntityPrototype {
@@ -19,6 +20,9 @@ impl Prototype for EntityPrototype {
             builder.add(comp.clone());
         };
         if let Some(comp) = self.collision.as_ref() {
+            builder.add(comp.clone());
+        };
+        if let Some(comp) = self.humanoid.as_ref() {
             builder.add(comp.clone());
         };
         builder

@@ -4,7 +4,7 @@ pub mod prototype;
 
 use std::collections::HashMap;
 use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
-use crate::entity::system::VelocitySystem;
+use crate::entity::system::{GravitySystem, VelocitySystem};
 use crate::{Chunk, ChunkPos, iter_components};
 use eyre::Result;
 use crate::api::{Carrier, CarrierAccess};
@@ -13,6 +13,7 @@ use crate::api::prototype::Prototype;
 use crate::api::registry::MappedRegistry;
 use crate::entity::prototype::EntityPrototype;
 use crate::entity::system::collision::CollisionSystem;
+use crate::entity::system::humanoid::HumanoidSystem;
 
 pub struct EntityStorage {
 	world: hecs::World,
@@ -85,7 +86,9 @@ impl EntityStorage {
 pub struct EntityWorld {
 	pub storage: EntityStorage,
 	velocity: VelocitySystem,
+	gravity: GravitySystem,
 	collision: CollisionSystem,
+	humanoid: HumanoidSystem,
 }
 
 impl EntityWorld {
@@ -93,11 +96,15 @@ impl EntityWorld {
 		Ok(EntityWorld  {
 			storage: EntityStorage::new(carrier),
 			velocity: VelocitySystem,
-			collision: CollisionSystem
+			gravity: GravitySystem,
+			collision: CollisionSystem,
+			humanoid: HumanoidSystem
 		})
 	}
 
 	pub fn tick(&mut self, chunks: &HashMap<ChunkPos, Chunk>) {
+		self.gravity.tick(&mut self.storage);
+		self.humanoid.tick(&mut self.storage);
 		self.collision.tick(&mut self.storage, chunks);
 		self.velocity.tick(&mut self.storage);
 	}

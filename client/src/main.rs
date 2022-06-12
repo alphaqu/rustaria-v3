@@ -18,7 +18,7 @@ use rustaria::api::registry::Registry;
 use rustaria::api::{Assets, Carrier, CarrierAccess};
 use rustaria::chunk::tile::{Tile, TilePrototype};
 use rustaria::chunk::{Chunk, ChunkLayer, CHUNK_SIZE};
-use rustaria::entity::component::{CollisionComponent, PhysicsComponent, PositionComponent};
+use rustaria::entity::component::{CollisionComponent, HumanoidComponent, PhysicsComponent, PositionComponent};
 use rustaria::entity::prototype::EntityPrototype;
 use rustaria::entity::EntityWorld;
 use rustaria::network::packet::{ClientBoundPacket, ServerBoundPacket};
@@ -135,7 +135,7 @@ impl Client {
                 Identifier::new("player"),
                 EntityPrototype {
                     position: PositionComponent {
-                        pos: Default::default(),
+                        pos: vec2(24.0, 20.0),
                     },
                     velocity: Some(PhysicsComponent {
                         vel: Default::default(),
@@ -145,6 +145,19 @@ impl Client {
                         collision_box: rect(-1.0, -1.0, 2.0, 2.0),
                         collided: Default::default(),
                     }),
+                    humanoid: Some(HumanoidComponent {
+                        jump_frames: 0.25,
+                        jump_speed: 20.,
+                        run_acceleration: 1.3,
+                        run_slowdown: 0.8,
+                        run_max_speed: 12.0,
+
+                        // ignore this shit
+                        dir: Default::default(),
+                        jumping: false,
+                        jumped: false,
+                        jump_frames_remaining: 0.0
+                    })
                 },
             )]),
         };
@@ -165,7 +178,7 @@ impl Client {
 
     pub fn tick_events(&mut self) -> Result<()> {
         for event in self.frontend.poll_events() {
-            if let event @ (WindowEvent::Key(Key::W | Key::A | Key::S | Key::D, _, _, _)
+            if let event @ (WindowEvent::Key(Key::W | Key::A | Key::S | Key::D | Key::Space, _, _, _)
             | WindowEvent::Scroll(_, _)) = event
             {
                 self.player.event(event)
@@ -186,14 +199,13 @@ impl Client {
                 }
             }
         }
-        self.player.tick(&mut self.network, &mut self.entity)?;
+        self.player.tick(&mut self.network, &mut self.entity, &self.chunks)?;
         self.renderer.tick(&self.chunks)?;
         Ok(())
     }
 
     pub fn draw(&mut self) -> Result<()> {
         let camera = self.player.get_camera();
-
         let mut frame = self.frontend.start_draw();
         frame.clear_color_srgb(0.15, 0.15, 0.15, 1.0);
         let result = self.renderer.draw(&self.frontend, camera, &mut frame);

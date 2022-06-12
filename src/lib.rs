@@ -19,6 +19,8 @@ use crate::api::Carrier;
 use crate::entity::EntityWorld;
 use crate::player::PlayerSystem;
 
+pub const TPS: usize = 144;
+
 pub struct Server {
     chunks: HashMap<ChunkPos, Chunk>,
     network: ServerNetwork,

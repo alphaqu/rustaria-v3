@@ -8,6 +8,8 @@ macro_rules! iter_components {
     ($BLOCK:block) => {
 	    { type T = $crate::entity::component::PositionComponent; $BLOCK; }
 	    { type T = $crate::entity::component::PhysicsComponent; $BLOCK; }
+	    { type T = $crate::entity::component::CollisionComponent; $BLOCK; }
+	    { type T = $crate::entity::component::HumanoidComponent; $BLOCK; }
     };
 }
 
@@ -27,4 +29,22 @@ pub struct PositionComponent {
 pub struct CollisionComponent {
 	pub collision_box: Rect<f32, WS>,
 	pub collided: DirMap<bool>,
+}
+
+
+#[derive(Clone, Debug)]
+pub struct HumanoidComponent {
+	// Settings
+	pub jump_frames: f32,
+	pub jump_speed: f32,
+
+	pub run_acceleration: f32,
+	pub run_slowdown: f32,
+	pub run_max_speed: f32,
+
+	// Runtime stuff
+	pub dir: Vector2D<f32, WS>,
+	pub jumping: bool,
+	pub jumped: bool,
+	pub jump_frames_remaining: f32,
 }

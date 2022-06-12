@@ -1,30 +1,27 @@
 use std::collections::HashMap;
-use std::ops::Index;
 
-use euclid::{point2, Rect, size2, Vector2D};
 use eyre::Result;
-use glfw::Glfw;
-use glium::{Blend, DrawParameters, Frame, implement_vertex, Program, uniform};
 use glium::program::SourceCode;
+use glium::{implement_vertex, uniform, Blend, DrawParameters, Frame, Program};
 
-use rustaria::api::{Assets, Carrier};
 use rustaria::api::registry::MappedRegistry;
-use rustaria::chunk::{Chunk, CHUNK_SIZE};
+use rustaria::api::{Assets, Carrier};
 use rustaria::chunk::tile::TilePrototype;
+use rustaria::chunk::{Chunk};
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::world_pos::WorldPos;
-use rustaria::ty::WS;
 
-use crate::Frontend;
 use crate::renderer::atlas::Atlas;
 use crate::renderer::buffer::MeshDrawer;
 use crate::renderer::builder::MeshBuilder;
 use crate::renderer::tile::TileRenderer;
+use crate::Frontend;
 
 mod atlas;
 mod buffer;
 mod builder;
 mod tile;
+mod entity;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -42,11 +39,15 @@ pub struct Camera {
 }
 
 pub struct WorldRenderer {
-    drawer: MeshDrawer<PosTexVertex>,
     pos_color_program: Program,
-
     atlas: Atlas,
-    tile_renderers: MappedRegistry<TilePrototype, Option<TileRenderer>>,
+
+    chunk_drawer: MeshDrawer<PosTexVertex>,
+    chunk_tile_renderers: MappedRegistry<TilePrototype, Option<TileRenderer>>,
+
+    entity_drawer: MeshDrawer<PosTexVertex>,
+
+
 }
 
 impl WorldRenderer {
@@ -60,17 +61,13 @@ impl WorldRenderer {
 
         let atlas = Atlas::new(frontend, assets, &images)?;
 
-        let tile_renderers = carrier.tile.map(|id, tile| {
-            if let Some(image) = &tile.image {
-                Some(TileRenderer {
-                    tex_pos: atlas.get(image),
-                })
-            } else {
-                None
-            }
+        let tile_renderers = carrier.tile.map(|_, tile| {
+            tile.image.as_ref().map(|image| TileRenderer {
+                tex_pos: atlas.get(image),
+            })
         });
         Ok(Self {
-            drawer: MeshDrawer::new(frontend)?,
+            chunk_drawer: MeshDrawer::new(frontend)?,
             pos_color_program: Program::new(
                 &frontend.ctx,
                 SourceCode {
@@ -82,7 +79,7 @@ impl WorldRenderer {
                 },
             )?,
             atlas,
-            tile_renderers,
+            chunk_tile_renderers: tile_renderers,
         })
     }
 
@@ -90,17 +87,17 @@ impl WorldRenderer {
         let mut builder = MeshBuilder::new();
         for (pos, chunk) in chunks {
             chunk.tile.entries(|entry, tile| {
-                if let Some(renderer) = self.tile_renderers.get(tile.id) {
+                if let Some(renderer) = self.chunk_tile_renderers.get(tile.id) {
                     renderer.mesh(WorldPos::new(*pos, entry), &mut builder);
                 }
             });
         }
-        self.drawer.upload(&builder)?;
+        self.chunk_drawer.upload(&builder)?;
         Ok(())
     }
 
     pub fn draw(&mut self, frontend: &Frontend, camera: Camera, frame: &mut Frame) -> Result<()> {
-        self.drawer.draw(
+        self.chunk_drawer.draw(
             frame,
             &self.pos_color_program,
             &uniform! {
