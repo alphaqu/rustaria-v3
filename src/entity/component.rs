@@ -14,6 +14,7 @@ macro_rules! iter_components {
 	    { type T = $crate::entity::component::CollisionComponent; $BLOCK; }
 	    { type T = $crate::entity::component::HumanoidComponent; $BLOCK; }
 	    { type T = $crate::entity::component::PrototypeComponent; $BLOCK; }
+	    { type T = $crate::entity::component::GravityComponent; $BLOCK; }
     };
 }
 
@@ -21,6 +22,11 @@ macro_rules! iter_components {
 #[derive(Clone)]
 pub struct PrototypeComponent {
 	pub id: Id<EntityPrototype>,
+}
+
+#[derive(Clone)]
+pub struct GravityComponent {
+	pub amount: f32,
 }
 
 #[derive(Clone)]

@@ -17,7 +17,7 @@ use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::Registry;
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria::chunk::tile::TilePrototype;
-use rustaria::entity::component::{CollisionComponent, HumanoidComponent, PhysicsComponent, PositionComponent};
+use rustaria::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent};
 use rustaria::entity::EntityWorld;
 use rustaria::entity::prototype::EntityPrototype;
 use rustaria::network::{ClientNetwork, new_networking};
@@ -153,6 +153,9 @@ impl Client {
                         jumping: false,
                         jumped: false,
                         jump_frames_remaining: 0.0
+                    }),
+                    gravity: Some(GravityComponent {
+                        amount: 1.0
                     }),
                     image: Some(Identifier::new("image/entity/glisco.png")),
                     panel: rect(-1.0, -1.0, 2.0, 2.0)
