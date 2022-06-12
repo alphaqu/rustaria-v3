@@ -1,5 +1,5 @@
 use crate::Camera;
-use euclid::Vector2D;
+use euclid::{vec2, Vector2D};
 use eyre::{ContextCompat, Result};
 use glfw::{Action, Key, WindowEvent};
 use hecs::{Component, Entity, EntityRef, Ref, RefMut};
@@ -22,7 +22,7 @@ const MAX_CORRECTION: f32 = 0.05;
 
 
 pub(crate) struct PlayerSystem {
-    server_player: Option<Entity>,
+    pub server_player: Option<Entity>,
     base_server_world: EntityWorld,
     prediction_world: EntityWorld,
 
@@ -181,20 +181,21 @@ impl PlayerSystem {
         Ok(())
     }
 
+    pub fn get_pos(&self) -> Vector2D<f32, WS> {
+        if let Some(entity) = self.server_player {
+            self.prediction_world
+                .storage
+                .get_comp::<PositionComponent>(entity)
+                .unwrap()
+                .pos
+        } else {
+            vec2(0.0, 0.0)
+        }
+    }
+
     pub fn get_camera(&mut self) -> Camera {
         Camera {
-            pos: {
-                if let Some(entity) = self.server_player {
-                    self.prediction_world
-                        .storage
-                        .get_comp::<PositionComponent>(entity)
-                        .unwrap()
-                        .pos
-                        .to_array()
-                } else {
-                    [0., 0.]
-                }
-            },
+            pos: self.get_pos().to_array(),
             zoom: self.zoom,
         }
     }

@@ -34,6 +34,8 @@ impl Atlas {
         image_locations: &[Identifier],
     ) -> Result<Atlas> {
         let mut images = HashMap::new();
+        images.insert(Identifier::new("missing"), image::load_from_memory(include_bytes!("./builtin/missing.png"))?);
+
         // Load all images
         for location in image_locations {
             if let Ok(image) = assets.get(location) {
@@ -81,7 +83,7 @@ impl Atlas {
             }
         };
 
-        let mut texture = glium::texture::SrgbTexture2d::empty_with_mipmaps(
+        let texture = glium::texture::SrgbTexture2d::empty_with_mipmaps(
             &frontend.ctx,
             glium::texture::MipmapsOption::EmptyMipmapsMax(3),
             width,
@@ -90,7 +92,7 @@ impl Atlas {
 
         let mut lookup = HashMap::new();
         for (identifier, (_, location)) in placements.packed_locations() {
-            let mut gl_pos = Rect::new(
+            let gl_pos = Rect::new(
                 point2(
                     location.x() as f32 / width as f32,
                     location.y() as f32 / height as f32,
@@ -109,8 +111,8 @@ impl Atlas {
                 if let Some(mipmap) = texture.mipmap(level) {
                     let left = location.x() >> level;
                     let bottom = location.y() >> level;
-                    let width = (location.x() + location.width()) >> level;
-                    let height = (location.y() + location.height()) >> level;
+                    let width = location.width() >> level;
+                    let height = location.height() >> level;
 
                     let image = image.resize_exact(width, height, FilterType::Nearest);
                     mipmap.write(
@@ -120,7 +122,7 @@ impl Atlas {
                             width,
                             height,
                         },
-                        RawImage2d::from_raw_rgba(image.to_rgba8().to_vec(), (width, height)),
+                        RawImage2d::from_raw_rgba_reversed(image.to_rgba8().as_ref(), (width, height)),
                     );
                 }
             }

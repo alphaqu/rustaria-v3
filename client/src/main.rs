@@ -157,7 +157,9 @@ impl Client {
                         jumping: false,
                         jumped: false,
                         jump_frames_remaining: 0.0
-                    })
+                    }),
+                    image: Some(Identifier::new("image/entity/glisco.png")),
+                    panel: rect(-1.0, -1.0, 2.0, 2.0)
                 },
             )]),
         };
@@ -200,7 +202,7 @@ impl Client {
             }
         }
         self.player.tick(&mut self.network, &mut self.entity, &self.chunks)?;
-        self.renderer.tick(&self.chunks)?;
+        self.renderer.tick(&self.entity.storage, &self.player, &self.chunks)?;
         Ok(())
     }
 

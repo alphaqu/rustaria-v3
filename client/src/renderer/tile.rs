@@ -16,7 +16,7 @@ impl TileRenderer {
         texture.size.width /= 12.0;
         texture.size.height /= 4.0;
 
-        texture.origin.y += tile_height;
+        texture.origin.y += tile_height * 2.0;
         texture.origin.x += tile_width;
 
         builder.push_quad((

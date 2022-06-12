@@ -1,4 +1,6 @@
 use euclid::{Rect, Vector2D};
+use crate::api::id::Id;
+use crate::entity::prototype::EntityPrototype;
 use crate::ty::direction::DirMap;
 use crate::ty::WS;
 
@@ -10,7 +12,14 @@ macro_rules! iter_components {
 	    { type T = $crate::entity::component::PhysicsComponent; $BLOCK; }
 	    { type T = $crate::entity::component::CollisionComponent; $BLOCK; }
 	    { type T = $crate::entity::component::HumanoidComponent; $BLOCK; }
+	    { type T = $crate::entity::component::PrototypeComponent; $BLOCK; }
     };
+}
+
+
+#[derive(Clone)]
+pub struct PrototypeComponent {
+	pub id: Id<EntityPrototype>,
 }
 
 #[derive(Clone)]
@@ -23,7 +32,6 @@ pub struct PhysicsComponent {
 pub struct PositionComponent {
 	pub pos: Vector2D<f32, WS>
 }
-
 
 #[derive(Clone)]
 pub struct CollisionComponent {

@@ -4,24 +4,30 @@ use eyre::Result;
 use glium::program::SourceCode;
 use glium::{implement_vertex, uniform, Blend, DrawParameters, Frame, Program};
 
+use rustaria::api::id::Id;
+use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::MappedRegistry;
 use rustaria::api::{Assets, Carrier};
 use rustaria::chunk::tile::TilePrototype;
-use rustaria::chunk::{Chunk};
+use rustaria::chunk::Chunk;
+use rustaria::entity::component::{PositionComponent, PrototypeComponent};
+use rustaria::entity::prototype::EntityPrototype;
+use rustaria::entity::EntityStorage;
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::world_pos::WorldPos;
 
 use crate::renderer::atlas::Atlas;
 use crate::renderer::buffer::MeshDrawer;
 use crate::renderer::builder::MeshBuilder;
+use crate::renderer::entity::EntityRenderer;
 use crate::renderer::tile::TileRenderer;
-use crate::Frontend;
+use crate::{Frontend, PlayerSystem};
 
 mod atlas;
 mod buffer;
 mod builder;
-mod tile;
 mod entity;
+mod tile;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -46,8 +52,9 @@ pub struct WorldRenderer {
     chunk_tile_renderers: MappedRegistry<TilePrototype, Option<TileRenderer>>,
 
     entity_drawer: MeshDrawer<PosTexVertex>,
+    entity_renderers: MappedRegistry<EntityPrototype, Option<EntityRenderer>>,
 
-
+    player_id: Id<EntityPrototype>,
 }
 
 impl WorldRenderer {
@@ -59,11 +66,23 @@ impl WorldRenderer {
             }
         }
 
-        let atlas = Atlas::new(frontend, assets, &images)?;
+        for tile in carrier.entity.entries() {
+            if let Some(image) = &tile.image {
+                images.push(image.clone());
+            }
+        }
 
+        let atlas = Atlas::new(frontend, assets, &images)?;
         let tile_renderers = carrier.tile.map(|_, tile| {
             tile.image.as_ref().map(|image| TileRenderer {
                 tex_pos: atlas.get(image),
+            })
+        });
+
+        let entity_renderers = carrier.entity.map(|_, entity| {
+            entity.image.as_ref().map(|image| EntityRenderer {
+                tex_pos: atlas.get(image),
+                panel: entity.panel,
             })
         });
         Ok(Self {
@@ -71,19 +90,30 @@ impl WorldRenderer {
             pos_color_program: Program::new(
                 &frontend.ctx,
                 SourceCode {
-                    vertex_shader: include_str!("renderer/shader/pos_tex.vert.glsl"),
+                    vertex_shader: include_str!("renderer/builtin/pos_tex.vert.glsl"),
                     tessellation_control_shader: None,
                     tessellation_evaluation_shader: None,
                     geometry_shader: None,
-                    fragment_shader: include_str!("renderer/shader/pos_tex.frag.glsl"),
+                    fragment_shader: include_str!("renderer/builtin/pos_tex.frag.glsl"),
                 },
             )?,
             atlas,
             chunk_tile_renderers: tile_renderers,
+            entity_drawer: MeshDrawer::new(frontend)?,
+            entity_renderers,
+            player_id: carrier
+                .entity
+                .identifier_to_id(&Identifier::new("player"))
+                .expect("where player"),
         })
     }
 
-    pub fn tick(&mut self, chunks: &HashMap<ChunkPos, Chunk>) -> Result<()> {
+    pub fn tick(
+        &mut self,
+        entities: &EntityStorage,
+        player: &PlayerSystem,
+        chunks: &HashMap<ChunkPos, Chunk>,
+    ) -> Result<()> {
         let mut builder = MeshBuilder::new();
         for (pos, chunk) in chunks {
             chunk.tile.entries(|entry, tile| {
@@ -93,24 +123,43 @@ impl WorldRenderer {
             });
         }
         self.chunk_drawer.upload(&builder)?;
+
+        let mut builder = MeshBuilder::new();
+        for (entity, (position, prototype)) in entities
+            .query::<(&PositionComponent, &PrototypeComponent)>()
+            .iter()
+        {
+            if let Some(renderer) = self.entity_renderers.get(prototype.id) {
+                // If this entity is our player, we use its predicted position instead of its server confirmed position.
+                if let Some(player_entity) = player.server_player {
+                    if player_entity == entity {
+                        renderer.mesh(player.get_pos(), &mut builder);
+                        continue;
+                    }
+                }
+                renderer.mesh(position.pos, &mut builder);
+            }
+        }
+        self.entity_drawer.upload(&builder)?;
         Ok(())
     }
 
     pub fn draw(&mut self, frontend: &Frontend, camera: Camera, frame: &mut Frame) -> Result<()> {
-        self.chunk_drawer.draw(
-            frame,
-            &self.pos_color_program,
-            &uniform! {
-                screen_ratio: frontend.screen_ratio,
-                atlas: &self.atlas.texture,
-                player_pos: camera.pos,
-                zoom: camera.zoom,
-            },
-            &DrawParameters {
-                blend: Blend::alpha_blending(),
-                ..DrawParameters::default()
-            },
-        )?;
+        let uniforms = uniform! {
+            screen_ratio: frontend.screen_ratio,
+            atlas: &self.atlas.texture,
+            player_pos: camera.pos,
+            zoom: camera.zoom,
+        };
+
+        let draw_parameters = DrawParameters {
+            blend: Blend::alpha_blending(),
+            ..DrawParameters::default()
+        };
+        self.chunk_drawer
+            .draw(frame, &self.pos_color_program, &uniforms, &draw_parameters)?;
+        self.entity_drawer
+            .draw(frame, &self.pos_color_program, &uniforms, &draw_parameters)?;
         Ok(())
     }
 }
