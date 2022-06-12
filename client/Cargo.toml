@@ -1,0 +1,23 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition = "2021"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustaria = { path = "../" }
+eyre = "0.6.8"
+color-eyre = "0.6.1"
+
+glfw = "0.45.0"
+euclid = "0.22.7"
+
+tracing = "0.1.35"
+tracing-subscriber = "0.3.11"
+
+glium = { version = "0.31.0", default-features = false, features = [] }
+image = { version = "0.24.2", default-features = false, features = ["png"] }
+rectangle-pack = "0.4.2"
+
