@@ -1,7 +1,7 @@
 use crate::renderer::builder::MeshBuilder;
 use crate::renderer::PosTexVertex;
 use euclid::{point2, Rect, size2};
-use rustaria::ty::{WorldPos};
+use rustaria::ty::world_pos::WorldPos;
 use crate::renderer::atlas::Atlas;
 
 pub struct TileRenderer {
@@ -21,7 +21,7 @@ impl TileRenderer {
 
         builder.push_quad((
             Rect::<f32, WorldPos>::new(
-                point2(pos.get_x() as f32, pos.get_y() as f32),
+                point2(pos.x() as f32, pos.y() as f32),
                 size2(1.0, 1.0),
             ),
             texture,

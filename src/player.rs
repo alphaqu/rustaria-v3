@@ -9,7 +9,7 @@ use tracing::{debug, info, trace, warn};
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
 use crate::api::Carrier;
-use crate::entity::component::{PositionComponent, VelocityComponent};
+use crate::entity::component::{PositionComponent, PhysicsComponent};
 use crate::entity::prototype::EntityPrototype;
 use crate::network::Token;
 use crate::ty::WS;
@@ -106,9 +106,9 @@ impl PlayerSystem {
             ServerBoundPlayerPacket::SetDir(tick, speed) => {
                 if let Some(player) = self.get_player_entity(token, entity) {
                     player
-                        .get_mut::<VelocityComponent>()
+                        .get_mut::<PhysicsComponent>()
                         .expect("Player does not have velocity")
-                        .velocity = speed;
+                        .vel = speed;
                 }  else {
                     trace!("player entity not here");
                 }

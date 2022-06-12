@@ -5,7 +5,7 @@ extern crate core;
 use std::collections::HashMap;
 use std::ops::Index;
 
-use euclid::{vec2, Vector2D};
+use euclid::{rect, vec2, Rect, Vector2D};
 use eyre::Result;
 use glfw::{Action, Key, WindowEvent};
 use glium::Surface;
@@ -13,19 +13,21 @@ use tracing::{info, Level};
 use tracing_subscriber::fmt::format;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use rustaria::{Server, ty};
-use rustaria::api::{Assets, Carrier};
 use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::Registry;
-use rustaria::chunk::{Chunk, CHUNK_SIZE, ChunkLayer};
+use rustaria::api::{Assets, Carrier, CarrierAccess};
 use rustaria::chunk::tile::{Tile, TilePrototype};
-use rustaria::entity::component::{PositionComponent, VelocityComponent};
-use rustaria::entity::EntityWorld;
+use rustaria::chunk::{Chunk, ChunkLayer, CHUNK_SIZE};
+use rustaria::entity::component::{CollisionComponent, PhysicsComponent, PositionComponent};
 use rustaria::entity::prototype::EntityPrototype;
-use rustaria::network::{ClientNetwork, new_networking};
+use rustaria::entity::EntityWorld;
 use rustaria::network::packet::{ClientBoundPacket, ServerBoundPacket};
+use rustaria::network::{new_networking, ClientNetwork};
 use rustaria::player::ServerBoundPlayerPacket;
-use rustaria::ty::{ChunkEntryPos, ChunkPos};
+use rustaria::ty::chunk_entry_pos::ChunkEntryPos;
+use rustaria::ty::chunk_pos::ChunkPos;
+use rustaria::ty::direction::DirMap;
+use rustaria::{ty, Server};
 
 use crate::frontend::Frontend;
 use crate::player::PlayerSystem;
@@ -46,20 +48,43 @@ fn main() -> Result<()> {
 
     info!("Boozing froge");
     let mut client = Client::new()?;
-    let id = client
+    let dirt = client
         .carrier
         .tile
         .identifier_to_id(&Identifier::new("dirt"))
         .expect("where dirt");
 
-    let mut chunk = Chunk {
-        tile: ChunkLayer::new_copy(client.carrier.tile.create(id)),
+    let air = client
+        .carrier
+        .tile
+        .identifier_to_id(&Identifier::new("air"))
+        .expect("where air");
+
+    let dirt_chunk = Chunk {
+        tile: ChunkLayer::new_copy(client.carrier.create(dirt)),
     };
 
-    client.server.put_chunk(ChunkPos::zero(), chunk);
-    client
-        .network
-        .send(ServerBoundPacket::RequestChunk(ChunkPos::zero()))?;
+    let air_chunk = Chunk {
+        tile: ChunkLayer::new_copy(client.carrier.create(air)),
+    };
+
+    client.server.put_chunk(ChunkPos { x: 0, y: 0 }, air_chunk.clone());
+    client.server.put_chunk(ChunkPos { x: 1, y: 0 }, dirt_chunk.clone());
+    client.server.put_chunk(ChunkPos { x: 2, y: 0 }, air_chunk.clone());
+
+    client.server.put_chunk(ChunkPos { x: 0, y: 1 }, air_chunk.clone());
+    client.server.put_chunk(ChunkPos { x: 1, y: 1 }, air_chunk.clone());
+    client.server.put_chunk(ChunkPos { x: 2, y: 1 }, air_chunk.clone());
+
+
+
+    client.network.send(ServerBoundPacket::RequestChunk(ChunkPos { x: 0, y: 0 }))?;
+    client.network.send(ServerBoundPacket::RequestChunk(ChunkPos { x: 1, y: 0 }))?;
+    client.network.send(ServerBoundPacket::RequestChunk(ChunkPos { x: 2, y: 0 }))?;
+    client.network.send(ServerBoundPacket::RequestChunk(ChunkPos { x: 0, y: 1 }))?;
+    client.network.send(ServerBoundPacket::RequestChunk(ChunkPos { x: 1, y: 1 }))?;
+    client.network.send(ServerBoundPacket::RequestChunk(ChunkPos { x: 2, y: 1 }))?;
+
     client.network.send(ServerBoundPlayerPacket::Join())?;
     while client.frontend.running() {
         client.tick_events()?;
@@ -90,30 +115,45 @@ impl Client {
         let frontend = Frontend::new()?;
         let assets = Assets {};
         let carrier = Carrier {
-            tile: Registry::new(vec![(
-                Identifier::new("dirt"),
-                TilePrototype {
-                    image: Identifier::new("image/tile/dirt.png"),
-                },
-            )]),
+            tile: Registry::new(vec![
+                (
+                    Identifier::new("dirt"),
+                    TilePrototype {
+                        image: Some(Identifier::new("image/tile/dirt.png")),
+                        collision: true,
+                    },
+                ),
+                (
+                    Identifier::new("air"),
+                    TilePrototype {
+                        image: None,
+                        collision: false,
+                    },
+                ),
+            ]),
             entity: Registry::new(vec![(
                 Identifier::new("player"),
                 EntityPrototype {
                     position: PositionComponent {
-                        pos: Default::default()
+                        pos: Default::default(),
                     },
-                    velocity: Some(VelocityComponent {
-                        velocity: Default::default()
-                    })
+                    velocity: Some(PhysicsComponent {
+                        vel: Default::default(),
+                        accel: Default::default(),
+                    }),
+                    collision: Some(CollisionComponent {
+                        collision_box: rect(-1.0, -1.0, 2.0, 2.0),
+                        collided: Default::default(),
+                    }),
                 },
-            )])
+            )]),
         };
         let (client, server) = new_networking();
 
         Ok(Self {
             renderer: WorldRenderer::new(&frontend, &carrier, &assets)?,
             frontend,
-            server: Server::new( &carrier, server)?,
+            server: Server::new(&carrier, server)?,
             network: client,
             entity: EntityWorld::new(&carrier)?,
             player: PlayerSystem::new(&carrier)?,
@@ -125,7 +165,9 @@ impl Client {
 
     pub fn tick_events(&mut self) -> Result<()> {
         for event in self.frontend.poll_events() {
-            if let event @ (WindowEvent::Key(Key::W | Key::A | Key::S | Key::D, _, _, _) | WindowEvent::Scroll(_, _)) = event {
+            if let event @ (WindowEvent::Key(Key::W | Key::A | Key::S | Key::D, _, _, _)
+            | WindowEvent::Scroll(_, _)) = event
+            {
                 self.player.event(event)
             }
         }
@@ -140,7 +182,7 @@ impl Client {
                     self.chunks.insert(pos, chunk);
                 }
                 ClientBoundPacket::Player(packet) => {
-                    self.player.packet(packet, &mut self.entity)?;
+                    self.player.packet(packet, &mut self.entity, &self.chunks)?;
                 }
             }
         }

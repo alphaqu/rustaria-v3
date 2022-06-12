@@ -6,15 +6,17 @@ use hecs::{Component, Entity, EntityRef, Ref, RefMut};
 use rustaria::api::id::Id;
 use rustaria::api::identifier::Identifier;
 use rustaria::api::Carrier;
-use rustaria::entity::component::{PositionComponent, VelocityComponent};
+use rustaria::entity::component::{PositionComponent, PhysicsComponent};
 use rustaria::entity::prototype::EntityPrototype;
 use rustaria::entity::EntityWorld;
 use rustaria::network::packet::ClientBoundPacket;
 use rustaria::network::ClientNetwork;
 use rustaria::player::{ClientBoundPlayerPacket, Player, ServerBoundPlayerPacket};
 use rustaria::ty::WS;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use tracing::debug;
+use rustaria::chunk::Chunk;
+use rustaria::ty::chunk_pos::ChunkPos;
 
 const MAX_CORRECTION: f32 = 0.05;
 
@@ -114,6 +116,7 @@ impl PlayerSystem {
         &mut self,
         packet: ClientBoundPlayerPacket,
         entity_world: &mut EntityWorld,
+        chunks: &HashMap<ChunkPos, Chunk>,
     ) -> Result<()> {
         match packet {
             ClientBoundPlayerPacket::RespondPos(tick, pos) => {
@@ -134,10 +137,10 @@ impl PlayerSystem {
                         // self.server_entity - self.base_server_entity, this lets us correct it in a sneaky timeframe.
                         self.base_server_world
                             .storage
-                            .get_mut_comp::<VelocityComponent>(entity)
+                            .get_mut_comp::<PhysicsComponent>(entity)
                             .unwrap()
-                            .velocity = speed;
-                        self.base_server_world.tick();
+                            .vel = speed;
+                        self.base_server_world.tick(chunks);
 
                         // If we reach the tick that we currently received,
                         // stop as the next events are the ones that the server has not yet seen.
@@ -147,7 +150,7 @@ impl PlayerSystem {
                     }
 
                     // Recompile our prediction
-                    self.compile_prediction();
+                    self.compile_prediction(chunks);
                 }
             }
             ClientBoundPlayerPacket::Joined(entity) => {
@@ -219,7 +222,7 @@ impl PlayerSystem {
 
     // When a client receives a packet, rebase the base_server_entity and
     // then apply the events not yet to be responded by the server.
-    fn compile_prediction(&mut self) -> Option<()> {
+    fn compile_prediction(&mut self, chunks: &HashMap<ChunkPos, Chunk>,) -> Option<()> {
         let entity = self.server_player?;
 
         // Put prediction on the server value
@@ -232,17 +235,17 @@ impl PlayerSystem {
         for (_, speed) in &self.unprocessed_events {
             self.prediction_world
                 .storage
-                .get_mut_comp::<VelocityComponent>(entity)
+                .get_mut_comp::<PhysicsComponent>(entity)
                 .unwrap()
-                .velocity = *speed;
-            self.prediction_world.tick();
+                .vel = *speed;
+            self.prediction_world.tick(chunks);
         }
 
         self.prediction_world
             .storage
-            .get_mut_comp::<VelocityComponent>(entity)
+            .get_mut_comp::<PhysicsComponent>(entity)
             .unwrap()
-            .velocity = self.speed;
+            .vel = self.speed;
 
         Some(())
     }

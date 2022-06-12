@@ -6,11 +6,12 @@ pub mod ty;
 pub mod api;
 pub mod player;
 pub mod entity;
+pub mod util;
 
 use crate::chunk::Chunk;
 use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
 use crate::network::ServerNetwork;
-use crate::ty::ChunkPos;
+use ty::chunk_pos::ChunkPos;
 use std::collections::HashMap;
 use eyre::{Context, Result};
 use tracing::info;
@@ -48,7 +49,7 @@ impl Server {
             }
         }
 
-        self.entity.tick();
+        self.entity.tick(&self.chunks);
         self.player.tick(&mut self.network, &self.entity).wrap_err("Ticking player system.")?;
         Ok(())
     }

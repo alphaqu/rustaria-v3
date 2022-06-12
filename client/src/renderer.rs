@@ -11,7 +11,9 @@ use rustaria::api::{Assets, Carrier};
 use rustaria::api::registry::MappedRegistry;
 use rustaria::chunk::{Chunk, CHUNK_SIZE};
 use rustaria::chunk::tile::TilePrototype;
-use rustaria::ty::{ChunkPos, WorldPos, WS};
+use rustaria::ty::chunk_pos::ChunkPos;
+use rustaria::ty::world_pos::WorldPos;
+use rustaria::ty::WS;
 
 use crate::Frontend;
 use crate::renderer::atlas::Atlas;
@@ -19,10 +21,10 @@ use crate::renderer::buffer::MeshDrawer;
 use crate::renderer::builder::MeshBuilder;
 use crate::renderer::tile::TileRenderer;
 
+mod atlas;
 mod buffer;
 mod builder;
 mod tile;
-mod atlas;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -44,21 +46,28 @@ pub struct WorldRenderer {
     pos_color_program: Program,
 
     atlas: Atlas,
-    tile_renderers: MappedRegistry<TilePrototype, TileRenderer>,
+    tile_renderers: MappedRegistry<TilePrototype, Option<TileRenderer>>,
 }
 
 impl WorldRenderer {
     pub fn new(frontend: &Frontend, carrier: &Carrier, assets: &Assets) -> Result<Self> {
         let mut images = Vec::new();
         for tile in carrier.tile.entries() {
-            images.push(tile.image.clone());
+            if let Some(image) = &tile.image {
+                images.push(image.clone());
+            }
         }
 
         let atlas = Atlas::new(frontend, assets, &images)?;
 
-
         let tile_renderers = carrier.tile.map(|id, tile| {
-            TileRenderer { tex_pos: atlas.get(&tile.image) }
+            if let Some(image) = &tile.image {
+                Some(TileRenderer {
+                    tex_pos: atlas.get(image),
+                })
+            } else {
+                None
+            }
         });
         Ok(Self {
             drawer: MeshDrawer::new(frontend)?,
@@ -81,9 +90,9 @@ impl WorldRenderer {
         let mut builder = MeshBuilder::new();
         for (pos, chunk) in chunks {
             chunk.tile.entries(|entry, tile| {
-                self.tile_renderers
-                    .get(tile.id)
-                    .mesh(WorldPos::new(*pos, entry), &mut builder);
+                if let Some(renderer) = self.tile_renderers.get(tile.id) {
+                    renderer.mesh(WorldPos::new(*pos, entry), &mut builder);
+                }
             });
         }
         self.drawer.upload(&builder)?;

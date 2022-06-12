@@ -1,45 +1,43 @@
-use crate::chunk::CHUNK_SIZE;
+pub mod chunk_entry_pos;
+pub mod chunk_pos;
+pub mod direction;
+pub mod world_pos;
 
 /// World Space
 pub struct WS;
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct ChunkEntryPos {
-	pub x: u8,
-	pub y: u8,
+
+pub enum Error {
+    OutOfBounds,
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct ChunkPos {
-	pub x: u32,
-	pub y: u32,
+pub trait Offset<D>: Sized {
+    fn wrapping_offset(self, displacement: D) -> Self;
+    fn checked_offset(self, displacement: D) -> Option<Self>;
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct WorldPos {
-	pub chunk: ChunkPos,
-	pub entry: ChunkEntryPos,
+#[inline]
+fn checked_add_signed_u32(a: u32, b: i32) -> Option<u32> {
+    // XXX(leocth):
+    // replace with std's `checked_add_signed` when `mixed_integer_ops` reaches stable.
+    // see https://github.com/rust-lang/rust/issues/87840
+    let (res, overflowed) = a.overflowing_add(b as u32);
+    if overflowed ^ (b < 0) {
+        None
+    } else {
+        Some(res)
+    }
 }
 
-impl WorldPos {
-	pub fn new(chunk: ChunkPos, entry: ChunkEntryPos) -> WorldPos {
-		WorldPos { chunk, entry }
-	}
-
-	pub fn get_x(&self) -> u32 {
-		(self.chunk.x * CHUNK_SIZE as u32) + self.entry.x as u32
-	}
-
-	pub fn get_y(&self) -> u32 {
-		(self.chunk.y * CHUNK_SIZE as u32) + self.entry.y as u32
-	}
-}
-
-impl ChunkPos {
-	pub fn zero() -> ChunkPos {
-		ChunkPos {
-			x: 0,
-			y: 0
-		}
-	}
+#[inline]
+fn checked_add_signed_u8(a: u8, b: i8) -> Option<u8> {
+    // XXX(leocth):
+    // replace with std's `checked_add_signed` when `mixed_integer_ops` reaches stable.
+    // see https://github.com/rust-lang/rust/issues/87840
+    let (res, overflowed) = a.overflowing_add(b as u8);
+    if overflowed ^ (b < 0) {
+        None
+    } else {
+        Some(res)
+    }
 }
