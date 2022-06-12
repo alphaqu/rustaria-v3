@@ -1,19 +1,19 @@
+use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::collections::{HashMap};
 
-use euclid::{vec2, Vector2D};
+use euclid::Vector2D;
 use eyre::{ContextCompat, Result};
 use hecs::{Entity, EntityRef};
 use tracing::{debug, info, trace, warn};
 
+use crate::{EntityWorld, packet, ServerNetwork};
+use crate::api::Carrier;
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
-use crate::api::Carrier;
-use crate::entity::component::{PositionComponent, HumanoidComponent};
+use crate::entity::component::{HumanoidComponent, PositionComponent};
 use crate::entity::prototype::EntityPrototype;
 use crate::network::Token;
 use crate::ty::WS;
-use crate::{packet, EntityWorld, ServerNetwork};
 
 packet!(Player(ServerBoundPlayerPacket, ClientBoundPlayerPacket));
 

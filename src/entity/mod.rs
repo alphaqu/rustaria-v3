@@ -1,19 +1,21 @@
-pub mod component;
-pub mod system;
-pub mod prototype;
-
 use std::collections::HashMap;
-use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
-use crate::entity::system::{GravitySystem, VelocitySystem};
-use crate::{Chunk, ChunkPos, iter_components};
+
 use eyre::Result;
-use crate::api::{Carrier, CarrierAccess};
+use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
+
+use crate::{Chunk, ChunkPos, iter_components};
+use crate::api::Carrier;
 use crate::api::id::Id;
 use crate::api::prototype::Prototype;
 use crate::api::registry::MappedRegistry;
 use crate::entity::prototype::EntityPrototype;
+use crate::entity::system::{GravitySystem, VelocitySystem};
 use crate::entity::system::collision::CollisionSystem;
 use crate::entity::system::humanoid::HumanoidSystem;
+
+pub mod component;
+pub mod system;
+pub mod prototype;
 
 pub struct EntityStorage {
 	world: hecs::World,

@@ -1,27 +1,25 @@
 use std::collections::HashMap;
 
 use eyre::Result;
+use glium::{Blend, DrawParameters, Frame, implement_vertex, Program, uniform};
 use glium::program::SourceCode;
-use glium::{implement_vertex, uniform, Blend, DrawParameters, Frame, Program};
 
-use rustaria::api::id::Id;
-use rustaria::api::identifier::Identifier;
-use rustaria::api::registry::MappedRegistry;
 use rustaria::api::{Assets, Carrier};
-use rustaria::chunk::tile::TilePrototype;
+use rustaria::api::registry::MappedRegistry;
 use rustaria::chunk::Chunk;
+use rustaria::chunk::tile::TilePrototype;
 use rustaria::entity::component::{PositionComponent, PrototypeComponent};
-use rustaria::entity::prototype::EntityPrototype;
 use rustaria::entity::EntityStorage;
+use rustaria::entity::prototype::EntityPrototype;
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::world_pos::WorldPos;
 
+use crate::{Frontend, PlayerSystem};
 use crate::renderer::atlas::Atlas;
 use crate::renderer::buffer::MeshDrawer;
 use crate::renderer::builder::MeshBuilder;
 use crate::renderer::entity::EntityRenderer;
 use crate::renderer::tile::TileRenderer;
-use crate::{Frontend, PlayerSystem};
 
 mod atlas;
 mod buffer;
@@ -44,7 +42,7 @@ pub struct Camera {
     pub zoom: f32,
 }
 
-pub struct WorldRenderer {
+pub(crate) struct WorldRenderer {
     pos_color_program: Program,
     atlas: Atlas,
 
@@ -53,8 +51,6 @@ pub struct WorldRenderer {
 
     entity_drawer: MeshDrawer<PosTexVertex>,
     entity_renderers: MappedRegistry<EntityPrototype, Option<EntityRenderer>>,
-
-    player_id: Id<EntityPrototype>,
 }
 
 impl WorldRenderer {
@@ -101,10 +97,6 @@ impl WorldRenderer {
             chunk_tile_renderers: tile_renderers,
             entity_drawer: MeshDrawer::new(frontend)?,
             entity_renderers,
-            player_id: carrier
-                .entity
-                .identifier_to_id(&Identifier::new("player"))
-                .expect("where player"),
         })
     }
 

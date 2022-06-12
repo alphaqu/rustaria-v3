@@ -1,22 +1,24 @@
-use crate::Camera;
+use std::collections::{HashMap, VecDeque};
+
 use euclid::{vec2, Vector2D};
 use eyre::{ContextCompat, Result};
 use glfw::{Action, Key, WindowEvent};
-use hecs::{Component, Entity, EntityRef, Ref, RefMut};
+use hecs::Entity;
+use tracing::debug;
+
+use rustaria::api::Carrier;
 use rustaria::api::id::Id;
 use rustaria::api::identifier::Identifier;
-use rustaria::api::Carrier;
-use rustaria::entity::component::{PositionComponent, PhysicsComponent, HumanoidComponent};
-use rustaria::entity::prototype::EntityPrototype;
-use rustaria::entity::EntityWorld;
-use rustaria::network::packet::ClientBoundPacket;
-use rustaria::network::ClientNetwork;
-use rustaria::player::{ClientBoundPlayerPacket, Player, PlayerCommand, ServerBoundPlayerPacket};
-use rustaria::ty::WS;
-use std::collections::{HashMap, VecDeque};
-use tracing::debug;
 use rustaria::chunk::Chunk;
+use rustaria::entity::component::{HumanoidComponent, PositionComponent};
+use rustaria::entity::EntityWorld;
+use rustaria::entity::prototype::EntityPrototype;
+use rustaria::network::ClientNetwork;
+use rustaria::player::{ClientBoundPlayerPacket, PlayerCommand, ServerBoundPlayerPacket};
 use rustaria::ty::chunk_pos::ChunkPos;
+use rustaria::ty::WS;
+
+use crate::Camera;
 
 const MAX_CORRECTION: f32 = 0.05;
 
@@ -66,7 +68,7 @@ impl PlayerSystem {
 
     pub fn event(&mut self, event: WindowEvent) {
         match event {
-            WindowEvent::Scroll(x, y) => {
+            WindowEvent::Scroll(_, y) => {
                 self.zoom += y as f32 / 1.0;
             }
             WindowEvent::Key(key, _, action, _) => {

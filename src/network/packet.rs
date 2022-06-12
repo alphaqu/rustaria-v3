@@ -1,5 +1,5 @@
-use crate::player::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
 use crate::Chunk;
+use crate::player::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
 use crate::ty::chunk_pos::ChunkPos;
 
 #[macro_export]

@@ -1,9 +1,9 @@
-use crate::api::prototype::Prototype;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
+use crate::api::prototype::Prototype;
 
 pub struct Registry<P: Prototype> {
     lookup: Vec<P>,

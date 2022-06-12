@@ -1,5 +1,6 @@
-use crate::api::prototype::Prototype;
 use std::marker::PhantomData;
+
+use crate::api::prototype::Prototype;
 
 /// The internal id is a instance bound identifier to the registry,
 /// absolutely not forward/backwards compatible across versions or even game instances.

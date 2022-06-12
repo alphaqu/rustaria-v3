@@ -1,3 +1,9 @@
+use std::ops::{Index, IndexMut};
+
+use euclid::{vec2, Vector2D};
+
+use Direction::*;
+
 // ======================================== DIRECTION ========================================
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum Direction {
@@ -7,9 +13,6 @@ pub enum Direction {
     Right,
 }
 
-use std::ops::{Index, IndexMut};
-use euclid::{vec2, Vector2D};
-use Direction::*;
 impl Direction {
     pub fn vertical(self) -> bool {
         match self {

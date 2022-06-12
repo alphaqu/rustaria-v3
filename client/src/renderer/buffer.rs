@@ -1,14 +1,14 @@
 use std::rc::Rc;
 
-use eyre::{Context, ContextCompat, Result};
+use eyre::{ContextCompat, Result};
+use glium::{
+    DrawParameters, Frame, IndexBuffer, Program, Surface, Vertex, VertexBuffer,
+};
 use glium::index::PrimitiveType;
 use glium::uniforms::Uniforms;
-use glium::{
-    DrawError, DrawParameters, Frame, IndexBuffer, Program, Surface, Vertex, VertexBuffer,
-};
 
-use crate::renderer::builder::MeshBuilder;
 use crate::Frontend;
+use crate::renderer::builder::MeshBuilder;
 
 pub struct MeshDrawer<T: Copy + Vertex> {
     ctx: Rc<glium::backend::Context>,

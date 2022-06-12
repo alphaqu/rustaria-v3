@@ -1,12 +1,12 @@
 use std::fmt::{Display, Formatter};
 
-use crate::chunk::CHUNK_SIZE;
 use euclid::Vector2D;
 
+use crate::chunk::CHUNK_SIZE;
+use crate::ty::{Error, Offset};
 use crate::ty::chunk_entry_pos::ChunkEntryPos;
 use crate::ty::chunk_pos::ChunkPos;
 use crate::ty::Error::OutOfBounds;
-use crate::ty::{Error, Offset};
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Default)]
 pub struct WorldPos {

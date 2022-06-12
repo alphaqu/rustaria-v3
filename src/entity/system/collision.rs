@@ -1,3 +1,9 @@
+use std::collections::HashMap;
+use std::ops::Index;
+
+use euclid::{Rect, Size2D, vec2, Vector2D};
+
+use crate::Chunk;
 use crate::entity::component::{CollisionComponent, PhysicsComponent, PositionComponent};
 use crate::entity::EntityStorage;
 use crate::ty::chunk_pos::ChunkPos;
@@ -5,10 +11,6 @@ use crate::ty::direction::DirMap;
 use crate::ty::world_pos::WorldPos;
 use crate::ty::WS;
 use crate::util::aabb;
-use crate::Chunk;
-use euclid::{vec2, Rect, Size2D, Vector2D};
-use std::collections::HashMap;
-use std::ops::Index;
 
 pub struct CollisionSystem;
 

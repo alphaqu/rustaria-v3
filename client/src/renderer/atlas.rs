@@ -1,22 +1,22 @@
 use std::collections::{BTreeMap, HashMap};
 
-use euclid::{point2, size2, Rect};
-use rectangle_pack::{
-    pack_rects, GroupedRectsToPlace, RectToInsert, RectanglePackError, TargetBin,
-};
-use tracing::{error, trace, warn};
-
-use rustaria::api::identifier::Identifier;
-use rustaria::api::Assets;
+use euclid::{point2, Rect, size2};
 use eyre::Result;
 use glium::texture::RawImage2d;
 use image::imageops::FilterType;
+use rectangle_pack::{
+    GroupedRectsToPlace, pack_rects, RectanglePackError, RectToInsert, TargetBin,
+};
+use tracing::{error, trace, warn};
+
+use rustaria::api::Assets;
+use rustaria::api::identifier::Identifier;
 
 use crate::Frontend;
 
 pub struct Atlas {
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
     pub texture: glium::texture::SrgbTexture2d,
     lookup: HashMap<Identifier, Rect<f32, Atlas>>,
 }

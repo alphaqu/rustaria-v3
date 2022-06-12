@@ -9,7 +9,7 @@ use glfw::{
 use glium::{Frame, SwapBuffersError};
 use glium::backend::Backend;
 use glium::debug::{DebugCallbackBehavior, Severity};
-use tracing::{event, info, Level};
+use tracing::{event, Level};
 
 pub struct Frontend {
     glfw: Glfw,
@@ -49,7 +49,7 @@ impl Frontend {
                     false,
                     DebugCallbackBehavior::Custom {
                         synchronous: false,
-                        callback: Box::new(|src, kind, severity, something, something2, msg| {
+                        callback: Box::new(|src, kind, severity, _, _, msg| {
                             match severity {
                                 Severity::Notification => {
                                     event!(target: "opengl", Level::DEBUG, ?src, ?kind, "{}", msg);
@@ -122,8 +122,8 @@ unsafe impl Backend for Window {
     }
 
     unsafe fn get_proc_address(&self, symbol: &str) -> *const c_void {
-        debug_assert!(unsafe { glfw::ffi::glfwGetCurrentContext() } != std::ptr::null_mut());
-        with_c_str(symbol, |procname| unsafe {
+        debug_assert!(!glfw::ffi::glfwGetCurrentContext().is_null());
+        with_c_str(symbol, |procname| {
             glfw::ffi::glfwGetProcAddress(procname)
         })
     }
@@ -138,8 +138,6 @@ unsafe impl Backend for Window {
     }
 
     unsafe fn make_current(&self) {
-        unsafe {
             glfw::ffi::glfwMakeContextCurrent(self.0.window_ptr());
-        }
     }
 }

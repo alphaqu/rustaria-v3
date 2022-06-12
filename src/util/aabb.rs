@@ -7,7 +7,7 @@
 use std::mem::swap;
 use std::ops::Mul;
 
-use euclid::{rect, vec2, Vector2D};
+use euclid::{rect, vec2};
 
 use crate::ty::direction::Direction;
 use crate::ty::WS;

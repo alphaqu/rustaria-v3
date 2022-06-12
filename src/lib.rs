@@ -1,5 +1,19 @@
 #![allow(clippy::new_without_default)]
 
+use std::collections::HashMap;
+
+use eyre::{Context, Result};
+use tracing::info;
+
+use ty::chunk_pos::ChunkPos;
+
+use crate::api::Carrier;
+use crate::chunk::Chunk;
+use crate::entity::EntityWorld;
+use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
+use crate::network::ServerNetwork;
+use crate::player::PlayerSystem;
+
 pub mod chunk;
 pub mod network;
 pub mod ty;
@@ -7,17 +21,6 @@ pub mod api;
 pub mod player;
 pub mod entity;
 pub mod util;
-
-use crate::chunk::Chunk;
-use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
-use crate::network::ServerNetwork;
-use ty::chunk_pos::ChunkPos;
-use std::collections::HashMap;
-use eyre::{Context, Result};
-use tracing::info;
-use crate::api::Carrier;
-use crate::entity::EntityWorld;
-use crate::player::PlayerSystem;
 
 pub const TPS: usize = 144;
 

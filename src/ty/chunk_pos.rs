@@ -1,9 +1,10 @@
 use euclid::Vector2D;
 use num::FromPrimitive;
+
 use crate::chunk::CHUNK_SIZE;
 use crate::ty;
-use crate::ty::direction::Direction;
 use crate::ty::{Error, Offset};
+use crate::ty::direction::Direction;
 
 // ======================================== POSITION ========================================
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Default, Hash)]

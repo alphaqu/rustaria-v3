@@ -3,31 +3,28 @@
 extern crate core;
 
 use std::collections::HashMap;
-use std::ops::Index;
 
-use euclid::{rect, vec2, Rect, Vector2D};
+use euclid::{rect, vec2};
 use eyre::Result;
-use glfw::{Action, Key, WindowEvent};
+use glfw::{Key, WindowEvent};
 use glium::Surface;
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format;
 use tracing_subscriber::util::SubscriberInitExt;
 
+use rustaria::api::{Assets, Carrier, CarrierAccess};
 use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::Registry;
-use rustaria::api::{Assets, Carrier, CarrierAccess};
-use rustaria::chunk::tile::{Tile, TilePrototype};
-use rustaria::chunk::{Chunk, ChunkLayer, CHUNK_SIZE};
+use rustaria::chunk::{Chunk, ChunkLayer};
+use rustaria::chunk::tile::TilePrototype;
 use rustaria::entity::component::{CollisionComponent, HumanoidComponent, PhysicsComponent, PositionComponent};
-use rustaria::entity::prototype::EntityPrototype;
 use rustaria::entity::EntityWorld;
+use rustaria::entity::prototype::EntityPrototype;
+use rustaria::network::{ClientNetwork, new_networking};
 use rustaria::network::packet::{ClientBoundPacket, ServerBoundPacket};
-use rustaria::network::{new_networking, ClientNetwork};
 use rustaria::player::ServerBoundPlayerPacket;
-use rustaria::ty::chunk_entry_pos::ChunkEntryPos;
+use rustaria::Server;
 use rustaria::ty::chunk_pos::ChunkPos;
-use rustaria::ty::direction::DirMap;
-use rustaria::{ty, Server};
 
 use crate::frontend::Frontend;
 use crate::player::PlayerSystem;
@@ -98,7 +95,6 @@ fn main() -> Result<()> {
 pub struct Client {
     frontend: Frontend,
     renderer: WorldRenderer,
-    assets: Assets,
 
     carrier: Carrier,
     server: Server,
@@ -174,7 +170,6 @@ impl Client {
             player: PlayerSystem::new(&carrier)?,
             chunks: Default::default(),
             carrier,
-            assets,
         })
     }
 

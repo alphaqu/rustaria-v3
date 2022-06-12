@@ -1,5 +1,7 @@
 use euclid::{Rect, Vector2D};
+
 use rustaria::ty::WS;
+
 use crate::renderer::atlas::Atlas;
 use crate::renderer::builder::MeshBuilder;
 use crate::renderer::PosTexVertex;

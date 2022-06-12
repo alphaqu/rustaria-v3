@@ -1,9 +1,9 @@
-pub mod packet;
-
-use crossbeam::channel::{unbounded, Receiver, Sender, TryIter};
+use crossbeam::channel::{Receiver, Sender, unbounded};
 use eyre::Result;
 
 use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
+
+pub mod packet;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct Token();
@@ -14,7 +14,7 @@ pub struct ServerNetwork {
 }
 
 impl ServerNetwork {
-    pub fn send(&self, to: Token, packet: impl Into<ClientBoundPacket>) -> Result<()> {
+    pub fn send(&self, _to: Token, packet: impl Into<ClientBoundPacket>) -> Result<()> {
         self.sender.send(packet.into())?;
         Ok(())
     }

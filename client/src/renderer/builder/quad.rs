@@ -1,4 +1,5 @@
 use euclid::Rect;
+
 use crate::renderer::atlas::Atlas;
 use crate::renderer::builder::Quad;
 use crate::renderer::PosTexVertex;

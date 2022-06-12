@@ -1,6 +1,6 @@
-use crate::TPS;
 use crate::entity::component::{CollisionComponent, HumanoidComponent, PhysicsComponent};
 use crate::entity::EntityStorage;
+use crate::TPS;
 use crate::ty::direction::Direction;
 
 pub struct HumanoidSystem;
