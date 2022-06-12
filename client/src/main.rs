@@ -190,6 +190,7 @@ impl Client {
             match packet {
                 ClientBoundPacket::Chunk(pos, chunk) => {
                     self.chunks.insert(pos, chunk);
+                    self.renderer.dirty_world();
                 }
                 ClientBoundPacket::Player(packet) => {
                     self.player.packet(packet, &mut self.entity, &self.chunks)?;
@@ -204,7 +205,7 @@ impl Client {
     pub fn draw(&mut self) -> Result<()> {
         let camera = self.player.get_camera();
         let mut frame = self.frontend.start_draw();
-        frame.clear_color_srgb(0.15, 0.15, 0.15, 1.0);
+        frame.clear_color(0.01, 0.01, 0.01, 1.0);
         let result = self.renderer.draw(&self.frontend, camera, &mut frame);
         frame.finish()?;
         result

@@ -6,6 +6,7 @@ use glium::{
 };
 use glium::index::PrimitiveType;
 use glium::uniforms::Uniforms;
+use tracing::trace;
 
 use crate::Frontend;
 use crate::renderer::builder::MeshBuilder;
@@ -37,7 +38,7 @@ impl<T: Copy + Vertex> MeshDrawer<T> {
                 self.vertex = Some(VertexBuffer::dynamic(&self.ctx, &builder.vertex)?);
             }
             Some(buffer) => {
-                if buffer.get_size() <= builder.vertex.len() {
+                if buffer.get_size() < builder.vertex.len() {
                     self.vertex = None;
                     self.vertex = Some(VertexBuffer::dynamic(&self.ctx, &builder.vertex)?);
                 } else {
@@ -61,7 +62,7 @@ impl<T: Copy + Vertex> MeshDrawer<T> {
                 )?);
             }
             Some(buffer) => {
-                if buffer.get_size() <= builder.index.len() {
+                if buffer.get_size() < builder.index.len() {
                     self.index = None;
                     self.index = Some(IndexBuffer::dynamic(
                         &self.ctx,

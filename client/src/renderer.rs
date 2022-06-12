@@ -46,6 +46,7 @@ pub(crate) struct WorldRenderer {
     pos_color_program: Program,
     atlas: Atlas,
 
+    chunk_dirty: bool,
     chunk_drawer: MeshDrawer<PosTexVertex>,
     chunk_tile_renderers: MappedRegistry<TilePrototype, Option<TileRenderer>>,
 
@@ -97,7 +98,12 @@ impl WorldRenderer {
             chunk_tile_renderers: tile_renderers,
             entity_drawer: MeshDrawer::new(frontend)?,
             entity_renderers,
+            chunk_dirty: true
         })
+    }
+
+    pub fn dirty_world(&mut self) {
+        self.chunk_dirty = true;
     }
 
     pub fn tick(
@@ -106,15 +112,18 @@ impl WorldRenderer {
         player: &PlayerSystem,
         chunks: &HashMap<ChunkPos, Chunk>,
     ) -> Result<()> {
-        let mut builder = MeshBuilder::new();
-        for (pos, chunk) in chunks {
-            chunk.tile.entries(|entry, tile| {
-                if let Some(renderer) = self.chunk_tile_renderers.get(tile.id) {
-                    renderer.mesh(WorldPos::new(*pos, entry), &mut builder);
-                }
-            });
+        if self.chunk_dirty {
+            let mut builder = MeshBuilder::new();
+            for (pos, chunk) in chunks {
+                chunk.tile.entries(|entry, tile| {
+                    if let Some(renderer) = self.chunk_tile_renderers.get(tile.id) {
+                        renderer.mesh(WorldPos::new(*pos, entry), &mut builder);
+                    }
+                });
+            }
+            self.chunk_drawer.upload(&builder)?;
+            self.chunk_dirty = false;
         }
-        self.chunk_drawer.upload(&builder)?;
 
         let mut builder = MeshBuilder::new();
         for (entity, (position, prototype)) in entities
@@ -133,6 +142,7 @@ impl WorldRenderer {
             }
         }
         self.entity_drawer.upload(&builder)?;
+
         Ok(())
     }
 
