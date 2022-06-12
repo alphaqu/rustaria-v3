@@ -9,7 +9,7 @@ edition = "2021"
 eyre = "0.6.8"
 tracing = "0.1.35"
 euclid = "0.22.7"
-
+hecs = "0.7.6"
 
 crossbeam = "0.8.1"
 parking_lot = "0.12.0"

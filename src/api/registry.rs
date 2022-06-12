@@ -52,9 +52,11 @@ impl<P: Prototype> Registry<P> {
         self.identifier_lookup.get(ident).copied()
     }
 
-    pub fn map<V>(&self, f: impl FnMut(&P) -> V) -> MappedRegistry<P, V>  {
+    pub fn map<V>(&self, mut f: impl FnMut(Id<P>, &P) -> V) -> MappedRegistry<P, V>  {
         MappedRegistry {
-            lookup: self.lookup.iter().map(f).collect(),
+            lookup: self.lookup.iter().enumerate().map(|(id, prototype)| unsafe {
+                f(Id::new(id as u32), prototype)
+            }).collect(),
             prototype: Default::default()
         }
     }

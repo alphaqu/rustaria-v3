@@ -57,7 +57,7 @@ impl WorldRenderer {
         let atlas = Atlas::new(frontend, assets, &images)?;
 
 
-        let tile_renderers = carrier.tile.map(|tile| {
+        let tile_renderers = carrier.tile.map(|id, tile| {
             TileRenderer { tex_pos: atlas.get(&tile.image) }
         });
         Ok(Self {

@@ -19,6 +19,9 @@ use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::Registry;
 use rustaria::chunk::{Chunk, CHUNK_SIZE, ChunkLayer};
 use rustaria::chunk::tile::{Tile, TilePrototype};
+use rustaria::entity::component::{PositionComponent, VelocityComponent};
+use rustaria::entity::EntityWorld;
+use rustaria::entity::prototype::EntityPrototype;
 use rustaria::network::{ClientNetwork, new_networking};
 use rustaria::network::packet::{ClientBoundPacket, ServerBoundPacket};
 use rustaria::player::ServerBoundPlayerPacket;
@@ -74,7 +77,9 @@ pub struct Client {
 
     carrier: Carrier,
     server: Server,
+
     network: ClientNetwork,
+    entity: EntityWorld,
     player: PlayerSystem,
 
     chunks: HashMap<ChunkPos, Chunk>,
@@ -91,15 +96,27 @@ impl Client {
                     image: Identifier::new("image/tile/dirt.png"),
                 },
             )]),
+            entity: Registry::new(vec![(
+                Identifier::new("player"),
+                EntityPrototype {
+                    position: PositionComponent {
+                        pos: Default::default()
+                    },
+                    velocity: Some(VelocityComponent {
+                        velocity: Default::default()
+                    })
+                },
+            )])
         };
         let (client, server) = new_networking();
 
         Ok(Self {
             renderer: WorldRenderer::new(&frontend, &carrier, &assets)?,
             frontend,
-            server: Server::new(server)?,
+            server: Server::new( &carrier, server)?,
             network: client,
-            player: PlayerSystem::new()?,
+            entity: EntityWorld::new(&carrier)?,
+            player: PlayerSystem::new(&carrier)?,
             chunks: Default::default(),
             carrier,
             assets,
@@ -123,11 +140,11 @@ impl Client {
                     self.chunks.insert(pos, chunk);
                 }
                 ClientBoundPacket::Player(packet) => {
-                    self.player.packet(packet);
+                    self.player.packet(packet, &mut self.entity)?;
                 }
             }
         }
-        self.player.tick(&mut self.network)?;
+        self.player.tick(&mut self.network, &mut self.entity)?;
         self.renderer.tick(&self.chunks)?;
         Ok(())
     }
