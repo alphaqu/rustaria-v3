@@ -1,21 +1,27 @@
+use euclid::{rect, vec2};
 use glium::{Blend, DrawParameters, Frame, Program, uniform};
 use glium::program::SourceCode;
-use euclid::vec2;
+
 use rustaria::api::Carrier;
 use rustaria::api::registry::MappedRegistry;
 use rustaria::chunk::CHUNK_SIZE;
 use rustaria::chunk::storage::ChunkStorage;
-use rustaria::chunk::tile::TilePrototype;
+use rustaria::chunk::tile::{ConnectionType, Tile, TilePrototype};
+use rustaria::debug::{DebugKind, DebugRendererImpl};
 use rustaria::entity::component::{PositionComponent, PrototypeComponent};
 use rustaria::entity::EntityStorage;
 use rustaria::entity::prototype::EntityPrototype;
 use rustaria::ty::chunk_pos::ChunkPos;
+use rustaria::ty::direction::Direction;
+use rustaria::ty::Offset;
 use rustaria::ty::world_pos::WorldPos;
-use crate::{Camera, Frontend, PlayerSystem};
+
+use crate::{Camera, DebugRenderer, Frontend, PlayerSystem};
 use crate::render::atlas::Atlas;
 use crate::render::buffer::MeshDrawer;
 use crate::render::builder::MeshBuilder;
 use crate::render::entity::EntityRenderer;
+use crate::render::neighbor::NeighborMatrixBuilder;
 use crate::render::PosTexVertex;
 use crate::render::tile::TileRenderer;
 
@@ -50,6 +56,7 @@ impl WorldRenderer {
         let tile_renderers = carrier.tile.map(|_, tile| {
             tile.image.as_ref().map(|image| TileRenderer {
                 tex_pos: atlas.get(image),
+                connection_type: tile.connection_type,
             })
         });
 
@@ -75,7 +82,7 @@ impl WorldRenderer {
             chunk_tile_renderers: tile_renderers,
             entity_drawer: MeshDrawer::new(frontend)?,
             entity_renderers,
-            chunk_dirty: true
+            chunk_dirty: true,
         })
     }
 
@@ -88,17 +95,42 @@ impl WorldRenderer {
         entities: &EntityStorage,
         player: &PlayerSystem,
         chunks: &ChunkStorage,
+        debug: &mut DebugRenderer,
     ) -> eyre::Result<()> {
         if self.chunk_dirty {
             let mut builder = MeshBuilder::new();
-            let pos = player.get_pos();
-            for y in -4..4{
+            let player_pos = player.get_pos();
+            for y in -4..4 {
                 for x in -4..4 {
-                    if let Ok(pos) =ChunkPos::try_from(pos + vec2(x as f32 * CHUNK_SIZE as f32, y as f32 * CHUNK_SIZE as f32))  {
+                    if let Ok(pos) = ChunkPos::try_from(
+                        player_pos + vec2(x as f32 * CHUNK_SIZE as f32, y as f32 * CHUNK_SIZE as f32),
+                    ) {
                         if let Some(chunk) = chunks.get(pos) {
+                            //debug.draw_hrect(DebugKind::ChunkBorders, 0x403e41, rect(x, y, CHUNK_SIZE as f32, CHUNK_SIZE as f32));
+                            let func = |tile: &Tile| {
+                                if let Some(renderer) = self.chunk_tile_renderers.get(tile.id) {
+                                 renderer.connection_type
+                                } else {
+                                    ConnectionType::Isolated
+                                }
+                            };
+
+                            let mut matrix = NeighborMatrixBuilder::new(
+                                chunk.tile.map(ConnectionType::Isolated, func),
+                            );
+                            matrix.compile_internal();
+                            for dir in Direction::values() {
+                                if let Some(neighbor_pos) = pos.checked_offset(dir) {
+                                    if let Some(neighbor) = chunks.get(neighbor_pos) {
+                                        matrix.compile_edge(dir, &neighbor.tile.map(ConnectionType::Isolated, func));
+                                    }
+                                }
+                            }
+
+                            let layer = matrix.export();
                             chunk.tile.entries(|entry, tile| {
                                 if let Some(renderer) = self.chunk_tile_renderers.get(tile.id) {
-                                    renderer.mesh(WorldPos::new(pos, entry), &mut builder);
+                                    renderer.mesh(WorldPos::new(pos, entry),layer[entry],&mut builder);
                                 }
                             });
                         }
@@ -131,7 +163,12 @@ impl WorldRenderer {
         Ok(())
     }
 
-    pub fn draw(&mut self, frontend: &Frontend, camera: &Camera, frame: &mut Frame) -> eyre::Result<()> {
+    pub fn draw(
+        &mut self,
+        frontend: &Frontend,
+        camera: &Camera,
+        frame: &mut Frame,
+    ) -> eyre::Result<()> {
         let uniforms = uniform! {
             screen_ratio: frontend.screen_ratio,
             atlas: &self.atlas.texture,

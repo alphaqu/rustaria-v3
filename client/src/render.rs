@@ -7,6 +7,7 @@ pub mod buffer;
 pub mod builder;
 pub mod debug;
 pub mod world;
+mod neighbor;
 
 #[repr(C)]
 #[derive(Copy, Clone)]

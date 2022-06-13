@@ -67,7 +67,7 @@ impl ClientWorld {
 		self.renderer.dirty_world();
 		self.player.tick(carrier, &mut self.network, &mut self.entity, &mut self.chunks)?;
 		self.entity.tick(&self.chunks, debug);
-		self.renderer.tick(&self.entity.storage, &self.player, &self.chunks)?;
+		self.renderer.tick(&self.entity.storage, &self.player, &self.chunks, debug)?;
 		Ok(())
 	}
 

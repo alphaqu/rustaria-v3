@@ -19,7 +19,7 @@ use crate::world::ClientWorld;
 use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::Registry;
 use rustaria::chunk::storage::ChunkStorage;
-use rustaria::chunk::tile::TilePrototype;
+use rustaria::chunk::tile::{ConnectionType, TilePrototype};
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria::debug::DebugKind;
 use rustaria::entity::component::{
@@ -60,6 +60,7 @@ impl Client {
         let mut debug = DebugRenderer::new(&frontend)?;
         debug.enable(DebugKind::EntityVelocity);
         debug.enable(DebugKind::EntityCollision);
+        debug.enable(DebugKind::ChunkBorders);
 
         Ok(Client {
             carrier: Carrier {
@@ -142,7 +143,7 @@ impl Client {
         let mut out = Vec::new();
         for y in 0..9 {
             for x in 0..9 {
-                if y > 0 {
+                if x == 0 || (y > 0 && x != 2)|| x > 3 {
                     out.push(Chunk {
                         tile: ChunkLayer::new_copy(air),
                     });
@@ -170,6 +171,7 @@ impl Client {
                     TilePrototype {
                         image: Some(Identifier::new("image/tile/dirt.png")),
                         collision: true,
+                        connection_type: ConnectionType::Connected
                     },
                 ),
                 (
@@ -177,6 +179,7 @@ impl Client {
                     TilePrototype {
                         image: None,
                         collision: false,
+                        connection_type: ConnectionType::Isolated
                     },
                 ),
             ]),

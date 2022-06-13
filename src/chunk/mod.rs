@@ -17,7 +17,7 @@ pub struct Chunk {
 // Layer
 #[derive(Clone)]
 pub struct ChunkLayer<T: Clone> {
-	data: [[T; CHUNK_SIZE]; CHUNK_SIZE],
+	pub data: [[T; CHUNK_SIZE]; CHUNK_SIZE],
 }
 
 impl<T: Clone> ChunkLayer<T>  {
@@ -35,6 +35,17 @@ impl<T: Clone> ChunkLayer<T>  {
 				func(ChunkEntryPos::new(x as u8, y as u8), &mut self.data[y][x]);
 			}
 		}
+	}
+
+	pub fn map<O: Clone + Copy>(&self, default: O, mut func: impl FnMut(&T) -> O) -> ChunkLayer<O> {
+		let mut out = ChunkLayer::new_copy(default);
+		for y in 0..CHUNK_SIZE {
+			for x in 0..CHUNK_SIZE {
+				out.data[y][x] = func(&self.data[y][x]);
+			}
+		}
+
+		out
 	}
 }
 

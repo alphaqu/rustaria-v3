@@ -41,6 +41,7 @@ impl DebugRendererImpl for DummyRenderer {
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum DebugKind {
 	Tile,
+	ChunkBorders,
 	EntityVelocity,
 	EntityCollision,
 }
