@@ -11,7 +11,7 @@ use glium::backend::Backend;
 use glium::debug::{DebugCallbackBehavior, Severity};
 use glium::program::SourceCode;
 use tracing::{event, Level};
-use crate::renderer::buffer::MeshDrawer;
+use crate::render::buffer::MeshDrawer;
 
 pub struct Frontend {
     glfw: Glfw,
@@ -37,6 +37,7 @@ impl Frontend {
         glfw.set_swap_interval(SwapInterval::Sync(1));
 
         window.set_key_polling(true);
+        window.set_cursor_pos_polling(true);
         window.set_size_polling(true);
         window.set_scroll_polling(true);
         window.set_mouse_button_polling(true);

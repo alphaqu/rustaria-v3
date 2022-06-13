@@ -1,6 +1,9 @@
+use crate::api::id::Id;
 use crate::Chunk;
+use crate::chunk::tile::TilePrototype;
 use crate::player::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
 use crate::ty::chunk_pos::ChunkPos;
+use crate::ty::world_pos::WorldPos;
 
 #[macro_export]
 macro_rules! packet {
@@ -22,6 +25,7 @@ macro_rules! packet {
 
 pub enum ServerBoundPacket {
     RequestChunk(ChunkPos),
+    SetTile(WorldPos, Id<TilePrototype>),
     Player(ServerBoundPlayerPacket),
 }
 

@@ -2,27 +2,29 @@ use std::collections::{HashMap, VecDeque};
 
 use euclid::{vec2, Vector2D};
 use eyre::{ContextCompat, Result};
-use glfw::{Action, Key, WindowEvent};
+use glfw::{Action, Key, MouseButton, WindowEvent};
 use hecs::Entity;
 use tracing::debug;
 
-use rustaria::api::Carrier;
 use rustaria::api::id::Id;
 use rustaria::api::identifier::Identifier;
+use rustaria::api::{Carrier, CarrierAccess};
 use rustaria::chunk::Chunk;
+use rustaria::chunk::storage::ChunkStorage;
+use rustaria::chunk::tile::TilePrototype;
 use rustaria::debug::DummyRenderer;
 use rustaria::entity::component::{HumanoidComponent, PositionComponent};
-use rustaria::entity::EntityWorld;
 use rustaria::entity::prototype::EntityPrototype;
-use rustaria::network::ClientNetwork;
+use rustaria::entity::EntityWorld;
+use rustaria::network::{ClientNetwork, ServerNetwork};
+use rustaria::network::packet::ServerBoundPacket;
 use rustaria::player::{ClientBoundPlayerPacket, PlayerCommand, ServerBoundPlayerPacket};
-use rustaria::ty::chunk_pos::ChunkPos;
+use rustaria::ty::world_pos::WorldPos;
 use rustaria::ty::WS;
 
-use crate::Camera;
+use crate::{Camera, Frontend};
 
-const MAX_CORRECTION: f32 = 0.05;
-
+const MAX_CORRECTION: f32 = 0.025;
 
 pub(crate) struct PlayerSystem {
     pub server_player: Option<Entity>,
@@ -37,11 +39,22 @@ pub(crate) struct PlayerSystem {
     d: bool,
     jump: bool,
     zoom: f32,
+
+    cursor_x: f32,
+    cursor_y: f32,
+
     speed: PlayerCommand,
 
     unprocessed_events: VecDeque<(u32, PlayerCommand)>,
     tick: u32,
     player_entity: Id<EntityPrototype>,
+    presses: Vec<Press>,
+
+    air_tile: Id<TilePrototype>,
+}
+
+pub enum Press {
+    Use(f32, f32),
 }
 
 impl PlayerSystem {
@@ -57,6 +70,8 @@ impl PlayerSystem {
             d: false,
             jump: false,
             zoom: 10.0,
+            cursor_x: 0.0,
+            cursor_y: 0.0,
             speed: PlayerCommand::default(),
             unprocessed_events: Default::default(),
             tick: 0,
@@ -64,13 +79,31 @@ impl PlayerSystem {
                 .entity
                 .identifier_to_id(&Identifier::new("player"))
                 .wrap_err("Player where")?,
+            presses: vec![],
+            air_tile: carrier.tile.identifier_to_id(&Identifier::new("air")).unwrap()
         })
     }
 
-    pub fn event(&mut self, event: WindowEvent) {
+    pub fn event(&mut self, event: WindowEvent, frontend: &Frontend) {
         match event {
             WindowEvent::Scroll(_, y) => {
                 self.zoom += y as f32 / 1.0;
+            }
+            WindowEvent::CursorPos(x, y) => {
+                self.cursor_x = x as f32;
+                self.cursor_y = y as f32;
+            }
+            WindowEvent::MouseButton(button, _, _) => {
+                let x = ((((self.cursor_x / frontend.dimensions.0 as f32) - 0.5) * 2.0) / frontend.screen_ratio) * self.zoom;
+                let y = ((((frontend.dimensions.1 as f32 - self.cursor_y) / frontend.dimensions.1 as f32) - 0.5) * 2.0) * self.zoom;
+                match button {
+                    MouseButton::Button1 => {
+                        // Use
+                        self.presses.push(Press::Use(x, y))
+                    }
+                    MouseButton::Button2 => {}
+                    _ => {}
+                }
             }
             WindowEvent::Key(key, _, action, _) => {
                 match key {
@@ -103,9 +136,10 @@ impl PlayerSystem {
 
     pub fn tick(
         &mut self,
+        carrier: &Carrier,
         network: &mut ClientNetwork,
         entity_world: &mut EntityWorld,
-        chunks: &HashMap<ChunkPos, Chunk>,
+        chunks: &mut ChunkStorage,
     ) -> Result<()> {
         self.prediction_world.tick(chunks, &mut DummyRenderer);
         if let Some(entity) = self.check(entity_world) {
@@ -120,14 +154,38 @@ impl PlayerSystem {
                 component.jumping = self.send_command.jumping;
             }
 
-
-
             self.tick += 1;
 
             // Send our speed at this tick
-            network.send(ServerBoundPlayerPacket::SetMove(self.tick, self.send_command))?;
-            self.unprocessed_events.push_front((self.tick, self.send_command));
+            network.send(ServerBoundPlayerPacket::SetMove(
+                self.tick,
+                self.send_command,
+            ))?;
+            self.unprocessed_events
+                .push_front((self.tick, self.send_command));
             self.send_command.dir = Vector2D::zero();
+
+            {
+                let pos = self
+                    .prediction_world
+                    .storage
+                    .get_comp::<PositionComponent>(entity)
+                    .unwrap()
+                    .pos;
+
+                for press in self.presses.drain(..) {
+                    match press {
+                        Press::Use(x, y) => {
+                            if let Ok(pos) = WorldPos::try_from(vec2::<_, WS>(x, y) + pos) {
+                               if let Some(chunk) =  chunks.get_mut(pos.chunk) {
+                                   chunk.tile[pos.entry] = carrier.create(self.air_tile);
+                               }
+                                network.send(ServerBoundPacket::SetTile(pos, self.air_tile))?;
+                            }
+                        }
+                    }
+                }
+            }
 
             self.correct_offset(entity, entity_world);
         }
@@ -138,7 +196,7 @@ impl PlayerSystem {
         &mut self,
         packet: ClientBoundPlayerPacket,
         entity_world: &mut EntityWorld,
-        chunks: &HashMap<ChunkPos, Chunk>,
+        chunks: &ChunkStorage,
     ) -> Result<()> {
         match packet {
             ClientBoundPlayerPacket::RespondPos(tick, pos) => {
@@ -158,7 +216,8 @@ impl PlayerSystem {
                         // By this being on the predicted speed we can safely isolate the error amount by doing
                         // self.server_entity - self.base_server_entity, this lets us correct it in a sneaky timeframe.
                         {
-                            let mut entity = self.base_server_world
+                            let mut entity = self
+                                .base_server_world
                                 .storage
                                 .get_mut_comp::<HumanoidComponent>(entity)
                                 .unwrap();
@@ -248,7 +307,7 @@ impl PlayerSystem {
 
     // When a client receives a packet, rebase the base_server_entity and
     // then apply the events not yet to be responded by the server.
-    fn compile_prediction(&mut self, chunks: &HashMap<ChunkPos, Chunk>,) -> Option<()> {
+    fn compile_prediction(&mut self, chunks: &ChunkStorage) -> Option<()> {
         let entity = self.server_player?;
 
         // Put prediction on the server value
@@ -260,7 +319,8 @@ impl PlayerSystem {
         // If reconciliation is on, we apply values that the server has not yet processed.
         for (_, speed) in &self.unprocessed_events {
             {
-                let mut prediction = self.prediction_world
+                let mut prediction = self
+                    .prediction_world
                     .storage
                     .get_mut_comp::<HumanoidComponent>(entity)
                     .unwrap();
@@ -270,7 +330,8 @@ impl PlayerSystem {
             self.prediction_world.tick(chunks, &mut DummyRenderer);
         }
 
-        let mut prediction = self.prediction_world
+        let mut prediction = self
+            .prediction_world
             .storage
             .get_mut_comp::<HumanoidComponent>(entity)
             .unwrap();

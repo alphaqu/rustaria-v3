@@ -1,6 +1,6 @@
-use crate::renderer::buffer::MeshDrawer;
-use crate::renderer::builder::MeshBuilder;
-use crate::renderer::PosColorVertex;
+use crate::render::buffer::MeshDrawer;
+use crate::render::builder::MeshBuilder;
+use crate::render::PosColorVertex;
 use crate::{Camera, Frontend};
 use euclid::{rect, vec2, Rect, Vector2D};
 use eyre::Result;

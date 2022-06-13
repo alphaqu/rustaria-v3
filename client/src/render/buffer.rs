@@ -10,7 +10,7 @@ use glium::uniforms::Uniforms;
 use tracing::trace;
 
 use crate::Frontend;
-use crate::renderer::builder::MeshBuilder;
+use crate::render::builder::MeshBuilder;
 
 pub struct MeshDrawer<T: Copy + Vertex> {
     ctx: Rc<glium::backend::Context>,

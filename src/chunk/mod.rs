@@ -5,6 +5,7 @@ use tile::Tile;
 use crate::ty::chunk_entry_pos::ChunkEntryPos;
 
 pub mod tile;
+pub mod storage;
 
 pub const CHUNK_SIZE: usize = 16;
 

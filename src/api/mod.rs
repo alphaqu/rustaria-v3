@@ -29,6 +29,7 @@ impl Assets {
 pub struct Carrier {
 	pub tile: Registry<TilePrototype>,
 	pub entity: Registry<EntityPrototype>,
+	pub assets: Assets,
 }
 
 pub trait CarrierAccess<P: Prototype> {

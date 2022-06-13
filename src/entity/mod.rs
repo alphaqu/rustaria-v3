@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use eyre::Result;
 use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
 
-use crate::{Chunk, ChunkPos, iter_components};
+use crate::{Chunk, ChunkPos, ChunkStorage, iter_components};
 use crate::api::Carrier;
 use crate::api::id::Id;
 use crate::api::prototype::Prototype;
@@ -105,7 +105,7 @@ impl EntityWorld {
 		})
 	}
 
-	pub fn tick(&mut self, chunks: &HashMap<ChunkPos, Chunk>, debug: &mut impl DebugRendererImpl) {
+	pub fn tick(&mut self, chunks: &ChunkStorage, debug: &mut impl DebugRendererImpl) {
 		self.humanoid.tick(&mut self.storage);
 		self.gravity.tick(&mut self.storage);
 		self.collision.tick(&mut self.storage, chunks, debug);

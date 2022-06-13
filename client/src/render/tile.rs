@@ -2,9 +2,9 @@ use euclid::{point2, Rect, size2};
 
 use rustaria::ty::world_pos::WorldPos;
 
-use crate::renderer::atlas::Atlas;
-use crate::renderer::builder::MeshBuilder;
-use crate::renderer::PosTexVertex;
+use crate::render::atlas::Atlas;
+use crate::render::builder::MeshBuilder;
+use crate::render::PosTexVertex;
 
 pub struct TileRenderer {
     pub tex_pos: Rect<f32, Atlas>,

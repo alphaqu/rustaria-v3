@@ -52,7 +52,7 @@ impl HumanoidSystem {
             }
 
             if humanoid.jump_frames_remaining > 0.0 {
-	            physics.vel.y += physics.vel.y.max( humanoid.jump_speed / TPS as f32);
+	            physics.vel.y = physics.vel.y.max( humanoid.jump_speed / TPS as f32);
 	            humanoid.jump_frames_remaining -= 1.0 / TPS as f32;
             }
         }

@@ -1,8 +1,8 @@
 use std::ops::Add;
 use euclid::Rect;
 
-use crate::renderer::builder::Quad;
-use crate::renderer::{PosColorVertex, PosTexVertex};
+use crate::render::builder::Quad;
+use crate::render::{PosColorVertex, PosTexVertex};
 
 impl<P: Quad<[f32; 2]>, T: Quad<[f32; 2]>> Quad<PosTexVertex> for (P, T) {
     fn expand(self) -> [PosTexVertex; 4] {

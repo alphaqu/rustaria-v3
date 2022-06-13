@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
-use euclid::Vector2D;
+use euclid::{vec2, Vector2D};
 use eyre::{ContextCompat, Result};
 use hecs::{Entity, EntityRef};
 use tracing::{debug, info, trace, warn};
@@ -114,7 +114,7 @@ impl PlayerSystem {
                     let mut component = player
                         .get_mut::<HumanoidComponent>()
                         .expect("Player does not have velocity");
-                    component.dir = speed.dir;
+                    component.dir = speed.dir.clamp(vec2(-1.0, -1.0), vec2(1.0, 1.0));
                     component.jumping = speed.jumping;
                 }  else {
                     trace!("player entity not here");

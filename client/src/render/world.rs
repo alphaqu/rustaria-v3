@@ -1,57 +1,23 @@
-use std::collections::HashMap;
-
-use eyre::Result;
-use glium::{Blend, DrawParameters, Frame, implement_vertex, Program, uniform};
+use glium::{Blend, DrawParameters, Frame, Program, uniform};
 use glium::program::SourceCode;
-
-use rustaria::api::{Assets, Carrier};
+use euclid::vec2;
+use rustaria::api::Carrier;
 use rustaria::api::registry::MappedRegistry;
-use rustaria::chunk::Chunk;
+use rustaria::chunk::CHUNK_SIZE;
+use rustaria::chunk::storage::ChunkStorage;
 use rustaria::chunk::tile::TilePrototype;
 use rustaria::entity::component::{PositionComponent, PrototypeComponent};
 use rustaria::entity::EntityStorage;
 use rustaria::entity::prototype::EntityPrototype;
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::world_pos::WorldPos;
-
-use crate::{Frontend, PlayerSystem};
-use crate::renderer::atlas::Atlas;
-use crate::renderer::buffer::MeshDrawer;
-use crate::renderer::builder::MeshBuilder;
-use crate::renderer::entity::EntityRenderer;
-use crate::renderer::tile::TileRenderer;
-
-mod atlas;
-mod entity;
-mod tile;
-pub mod buffer;
-pub mod builder;
-pub mod debug;
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct PosTexVertex {
-    position: [f32; 2],
-    texture: [f32; 2],
-}
-
-implement_vertex!(PosTexVertex, position, texture);
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct PosColorVertex {
-    position: [f32; 2],
-    color: [f32; 3],
-}
-
-implement_vertex!(PosColorVertex, position, color);
-
-
-#[derive(Copy, Clone)]
-pub struct Camera {
-    pub pos: [f32; 2],
-    pub zoom: f32,
-}
+use crate::{Camera, Frontend, PlayerSystem};
+use crate::render::atlas::Atlas;
+use crate::render::buffer::MeshDrawer;
+use crate::render::builder::MeshBuilder;
+use crate::render::entity::EntityRenderer;
+use crate::render::PosTexVertex;
+use crate::render::tile::TileRenderer;
 
 pub(crate) struct WorldRenderer {
     pos_color_program: Program,
@@ -66,7 +32,7 @@ pub(crate) struct WorldRenderer {
 }
 
 impl WorldRenderer {
-    pub fn new(frontend: &Frontend, carrier: &Carrier, assets: &Assets) -> Result<Self> {
+    pub fn new(frontend: &Frontend, carrier: &Carrier) -> eyre::Result<Self> {
         let mut images = Vec::new();
         for tile in carrier.tile.entries() {
             if let Some(image) = &tile.image {
@@ -80,7 +46,7 @@ impl WorldRenderer {
             }
         }
 
-        let atlas = Atlas::new(frontend, assets, &images)?;
+        let atlas = Atlas::new(frontend, carrier, &images)?;
         let tile_renderers = carrier.tile.map(|_, tile| {
             tile.image.as_ref().map(|image| TileRenderer {
                 tex_pos: atlas.get(image),
@@ -98,11 +64,11 @@ impl WorldRenderer {
             pos_color_program: Program::new(
                 &frontend.ctx,
                 SourceCode {
-                    vertex_shader: include_str!("renderer/builtin/pos_tex.vert.glsl"),
+                    vertex_shader: include_str!("builtin/pos_tex.vert.glsl"),
                     tessellation_control_shader: None,
                     tessellation_evaluation_shader: None,
                     geometry_shader: None,
-                    fragment_shader: include_str!("renderer/builtin/pos_tex.frag.glsl"),
+                    fragment_shader: include_str!("builtin/pos_tex.frag.glsl"),
                 },
             )?,
             atlas,
@@ -121,17 +87,25 @@ impl WorldRenderer {
         &mut self,
         entities: &EntityStorage,
         player: &PlayerSystem,
-        chunks: &HashMap<ChunkPos, Chunk>,
-    ) -> Result<()> {
+        chunks: &ChunkStorage,
+    ) -> eyre::Result<()> {
         if self.chunk_dirty {
             let mut builder = MeshBuilder::new();
-            for (pos, chunk) in chunks {
-                chunk.tile.entries(|entry, tile| {
-                    if let Some(renderer) = self.chunk_tile_renderers.get(tile.id) {
-                        renderer.mesh(WorldPos::new(*pos, entry), &mut builder);
+            let pos = player.get_pos();
+            for y in -4..4{
+                for x in -4..4 {
+                    if let Ok(pos) =ChunkPos::try_from(pos + vec2(x as f32 * CHUNK_SIZE as f32, y as f32 * CHUNK_SIZE as f32))  {
+                        if let Some(chunk) = chunks.get(pos) {
+                            chunk.tile.entries(|entry, tile| {
+                                if let Some(renderer) = self.chunk_tile_renderers.get(tile.id) {
+                                    renderer.mesh(WorldPos::new(pos, entry), &mut builder);
+                                }
+                            });
+                        }
                     }
-                });
+                }
             }
+
             self.chunk_drawer.upload(&builder)?;
             self.chunk_dirty = false;
         }
@@ -157,7 +131,7 @@ impl WorldRenderer {
         Ok(())
     }
 
-    pub fn draw(&mut self, frontend: &Frontend, camera: &Camera, frame: &mut Frame) -> Result<()> {
+    pub fn draw(&mut self, frontend: &Frontend, camera: &Camera, frame: &mut Frame) -> eyre::Result<()> {
         let uniforms = uniform! {
             screen_ratio: frontend.screen_ratio,
             atlas: &self.atlas.texture,
