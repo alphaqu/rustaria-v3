@@ -10,6 +10,7 @@ use rustaria::api::Carrier;
 use rustaria::api::id::Id;
 use rustaria::api::identifier::Identifier;
 use rustaria::chunk::Chunk;
+use rustaria::debug::DummyRenderer;
 use rustaria::entity::component::{HumanoidComponent, PositionComponent};
 use rustaria::entity::EntityWorld;
 use rustaria::entity::prototype::EntityPrototype;
@@ -106,10 +107,20 @@ impl PlayerSystem {
         entity_world: &mut EntityWorld,
         chunks: &HashMap<ChunkPos, Chunk>,
     ) -> Result<()> {
-        self.prediction_world.tick(chunks);
+        self.prediction_world.tick(chunks, &mut DummyRenderer);
         if let Some(entity) = self.check(entity_world) {
             self.send_command.dir = self.speed.dir;
             self.send_command.jumping = self.jump;
+            {
+                let mut component = entity_world
+                    .storage
+                    .get_mut_comp::<HumanoidComponent>(entity)
+                    .unwrap();
+                component.dir = self.send_command.dir;
+                component.jumping = self.send_command.jumping;
+            }
+
+
 
             self.tick += 1;
 
@@ -154,7 +165,7 @@ impl PlayerSystem {
                             entity.dir = speed.dir;
                             entity.jumping = speed.jumping;
                         }
-                        self.base_server_world.tick(chunks);
+                        self.base_server_world.tick(chunks, &mut DummyRenderer);
 
                         // If we reach the tick that we currently received,
                         // stop as the next events are the ones that the server has not yet seen.
@@ -203,7 +214,7 @@ impl PlayerSystem {
     }
 
     // If the server says a different value try to correct it without freaking the player out.
-    fn correct_offset(&mut self, entity: Entity, entity_world: &mut EntityWorld) {
+    fn correct_offset(&mut self, entity: Entity, entity_world: &EntityWorld) {
         let server_pos = entity_world
             .storage
             .get_comp::<PositionComponent>(entity)
@@ -256,7 +267,7 @@ impl PlayerSystem {
                 prediction.dir = speed.dir;
                 prediction.jumping = speed.jumping;
             }
-            self.prediction_world.tick(chunks);
+            self.prediction_world.tick(chunks, &mut DummyRenderer);
         }
 
         let mut prediction = self.prediction_world

@@ -50,7 +50,7 @@ pub struct CollisionComponent {
 #[derive(Clone, Debug)]
 pub struct HumanoidComponent {
 	// Settings
-	pub jump_frames: f32,
+	pub jump_amount: f32,
 	pub jump_speed: f32,
 
 	pub run_acceleration: f32,

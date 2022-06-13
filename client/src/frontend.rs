@@ -2,14 +2,16 @@ use std::os::raw::{c_int, c_void};
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
-use eyre::{ContextCompat, Result};
+use eyre::{ContextCompat, Result, WrapErr};
 use glfw::{
     Context, Glfw, OpenGlProfileHint, SwapInterval, WindowEvent, WindowHint, WindowMode, with_c_str,
 };
-use glium::{Frame, SwapBuffersError};
+use glium::{Frame, Program, SwapBuffersError, Vertex};
 use glium::backend::Backend;
 use glium::debug::{DebugCallbackBehavior, Severity};
+use glium::program::SourceCode;
 use tracing::{event, Level};
+use crate::renderer::buffer::MeshDrawer;
 
 pub struct Frontend {
     glfw: Glfw,
@@ -78,6 +80,14 @@ impl Frontend {
         Ok(frontend)
     }
 
+    pub fn create_drawer<T: Copy + Vertex>(&self) -> Result<MeshDrawer<T>> {
+        MeshDrawer::new(self)
+    }
+
+    pub fn create_program(&self, code: SourceCode) -> Result<Program> {
+        Program::new(&self.ctx, code).wrap_err("Failed to create program")
+    }
+    
     fn resize(&mut self, width: u32, height: u32) {
         self.dimensions = (width, height);
         self.screen_ratio = height as f32 / width as f32;

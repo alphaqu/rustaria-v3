@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
-use euclid::{Rect, Size2D, vec2, Vector2D};
+use euclid::{Rect, rect, Size2D, vec2, Vector2D};
 
 use crate::Chunk;
+use crate::debug::{DebugKind, DebugRendererImpl};
 use crate::entity::component::{CollisionComponent, PhysicsComponent, PositionComponent};
 use crate::entity::EntityStorage;
 use crate::ty::chunk_pos::ChunkPos;
@@ -15,7 +16,7 @@ use crate::util::aabb;
 pub struct CollisionSystem;
 
 impl CollisionSystem {
-    pub fn tick(&mut self, storage: &mut EntityStorage, chunks: &HashMap<ChunkPos, Chunk>) {
+    pub fn tick(&mut self, storage: &mut EntityStorage, chunks: &HashMap<ChunkPos, Chunk>, debug: &mut impl DebugRendererImpl) {
         for (_, (collision, position, physics)) in storage.query_mut::<(
             &mut CollisionComponent,
             &PositionComponent,
@@ -34,6 +35,8 @@ impl CollisionSystem {
             let y1 = new_rect.min_y().min(old_rect.min_y()).floor() as i64;
             let x2 = new_rect.max_x().max(old_rect.max_x()).ceil() as i64;
             let y2 = new_rect.max_y().max(old_rect.max_y()).ceil() as i64;
+            debug.draw_hrect(DebugKind::EntityCollision, 0x727072, rect(x1 as f32, y1 as f32, x2 as f32 - x1 as f32, y2 as f32 - y1 as f32));
+            debug.draw_hrect(DebugKind::EntityCollision, 0xfcfcfa, new_rect);
 
             let mut collisions = Vec::new();
             for x in x1..=x2 {
@@ -41,6 +44,7 @@ impl CollisionSystem {
                     if let Some((pos, contact_time)) =
                         test_tile(vec2(x as f32, y as f32), physics.vel, old_rect, chunks)
                     {
+                        debug.draw_hrect(DebugKind::EntityCollision, 0x939293, pos);
                         collisions.push((pos, contact_time));
                     }
                 }
@@ -52,6 +56,7 @@ impl CollisionSystem {
                 if let Some(Some((d, contact))) =
                     aabb::resolve_dynamic_rect_vs_rect(physics.vel, old_rect, 1.0, pos)
                 {
+                    debug.draw_hrect(DebugKind::EntityCollision, 0xc1c0c0, pos);
                     physics.vel += d;
                     physics.accel += contact
                         .to_vec2()

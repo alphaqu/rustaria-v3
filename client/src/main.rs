@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use euclid::{rect, vec2};
 use eyre::Result;
 use glfw::{Key, WindowEvent};
-use glium::Surface;
+use glium::{Frame, Surface};
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -17,18 +17,20 @@ use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::Registry;
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria::chunk::tile::TilePrototype;
+use rustaria::debug::DebugKind;
 use rustaria::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent};
 use rustaria::entity::EntityWorld;
 use rustaria::entity::prototype::EntityPrototype;
 use rustaria::network::{ClientNetwork, new_networking};
 use rustaria::network::packet::{ClientBoundPacket, ServerBoundPacket};
 use rustaria::player::ServerBoundPlayerPacket;
-use rustaria::Server;
+use rustaria::{Server, TPS};
 use rustaria::ty::chunk_pos::ChunkPos;
 
 use crate::frontend::Frontend;
 use crate::player::PlayerSystem;
 use crate::renderer::{Camera, WorldRenderer};
+use crate::renderer::debug::DebugRenderer;
 
 mod frontend;
 mod player;
@@ -67,11 +69,11 @@ fn main() -> Result<()> {
 
     client.server.put_chunk(ChunkPos { x: 0, y: 0 }, air_chunk.clone());
     client.server.put_chunk(ChunkPos { x: 1, y: 0 }, dirt_chunk.clone());
-    client.server.put_chunk(ChunkPos { x: 2, y: 0 }, air_chunk.clone());
+    client.server.put_chunk(ChunkPos { x: 2, y: 0 }, dirt_chunk.clone());
 
     client.server.put_chunk(ChunkPos { x: 0, y: 1 }, air_chunk.clone());
     client.server.put_chunk(ChunkPos { x: 1, y: 1 }, air_chunk.clone());
-    client.server.put_chunk(ChunkPos { x: 2, y: 1 }, air_chunk.clone());
+    client.server.put_chunk(ChunkPos { x: 2, y: 1 }, dirt_chunk.clone());
 
 
 
@@ -94,6 +96,7 @@ fn main() -> Result<()> {
 
 pub struct Client {
     frontend: Frontend,
+    debug: DebugRenderer,
     renderer: WorldRenderer,
 
     carrier: Carrier,
@@ -142,11 +145,11 @@ impl Client {
                         collided: Default::default(),
                     }),
                     humanoid: Some(HumanoidComponent {
-                        jump_frames: 0.25,
-                        jump_speed: 20.,
-                        run_acceleration: 1.3,
-                        run_slowdown: 0.8,
-                        run_max_speed: 12.0,
+                        jump_amount: 15.0,
+                        jump_speed: 20.0,
+                        run_acceleration: 0.08 ,
+                        run_slowdown: 0.2,
+                        run_max_speed: 11.0 ,
 
                         // ignore this shit
                         dir: Default::default(),
@@ -164,8 +167,12 @@ impl Client {
         };
         let (client, server) = new_networking();
 
+        let mut debug = DebugRenderer::new(&frontend)?;
+        debug.enable(DebugKind::EntityVelocity);
+        debug.enable(DebugKind::EntityCollision);
         Ok(Self {
             renderer: WorldRenderer::new(&frontend, &carrier, &assets)?,
+            debug: debug,
             frontend,
             server: Server::new(&carrier, server)?,
             network: client,
@@ -201,7 +208,9 @@ impl Client {
             }
         }
         self.player.tick(&mut self.network, &mut self.entity, &self.chunks)?;
+        self.entity.tick(&self.chunks, &mut self.debug);
         self.renderer.tick(&self.entity.storage, &self.player, &self.chunks)?;
+        self.debug.finish()?;
         Ok(())
     }
 
@@ -209,8 +218,14 @@ impl Client {
         let camera = self.player.get_camera();
         let mut frame = self.frontend.start_draw();
         frame.clear_color(0.01, 0.01, 0.01, 1.0);
-        let result = self.renderer.draw(&self.frontend, camera, &mut frame);
+        let result = self.draw_internal(camera, &mut frame);
         frame.finish()?;
         result
+    }
+
+    fn draw_internal(&mut self, camera: Camera, frame: &mut Frame) -> Result<()> {
+         self.renderer.draw(&self.frontend, &camera, frame)?;
+         self.debug.draw(&self.frontend, &camera, frame)?;
+         Ok(())
     }
 }

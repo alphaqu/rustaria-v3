@@ -8,6 +8,7 @@ use crate::api::Carrier;
 use crate::api::id::Id;
 use crate::api::prototype::Prototype;
 use crate::api::registry::MappedRegistry;
+use crate::debug::DebugRendererImpl;
 use crate::entity::prototype::EntityPrototype;
 use crate::entity::system::{GravitySystem, VelocitySystem};
 use crate::entity::system::collision::CollisionSystem;
@@ -104,10 +105,10 @@ impl EntityWorld {
 		})
 	}
 
-	pub fn tick(&mut self, chunks: &HashMap<ChunkPos, Chunk>) {
-		self.gravity.tick(&mut self.storage);
+	pub fn tick(&mut self, chunks: &HashMap<ChunkPos, Chunk>, debug: &mut impl DebugRendererImpl) {
 		self.humanoid.tick(&mut self.storage);
-		self.collision.tick(&mut self.storage, chunks);
-		self.velocity.tick(&mut self.storage);
+		self.gravity.tick(&mut self.storage);
+		self.collision.tick(&mut self.storage, chunks, debug);
+		self.velocity.tick(&mut self.storage, debug);
 	}
 }

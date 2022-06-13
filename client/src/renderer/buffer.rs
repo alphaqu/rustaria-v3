@@ -1,3 +1,4 @@
+use std::mem::size_of;
 use std::rc::Rc;
 
 use eyre::{ContextCompat, Result};
@@ -32,48 +33,53 @@ impl<T: Copy + Vertex> MeshDrawer<T> {
 
     pub fn upload(&mut self, builder: &MeshBuilder<T>) -> Result<()> {
         // Vertex buffer
-        match &mut self.vertex {
-            None => {
-                self.vertex = None;
-                self.vertex = Some(VertexBuffer::dynamic(&self.ctx, &builder.vertex)?);
-            }
-            Some(buffer) => {
-                if buffer.get_size() < builder.vertex.len() {
+
+        if !builder.vertex.is_empty() {
+            match &mut self.vertex {
+                None => {
                     self.vertex = None;
                     self.vertex = Some(VertexBuffer::dynamic(&self.ctx, &builder.vertex)?);
-                } else {
-                    buffer
-                        .slice_mut(0..builder.vertex.len())
-                        .unwrap()
-                        .write(&builder.vertex);
+                }
+                Some(buffer) => {
+                    if buffer.get_size() < builder.vertex.len() * size_of::<T>() {
+                        self.vertex = None;
+                        self.vertex = Some(VertexBuffer::dynamic(&self.ctx, &builder.vertex)?);
+                    } else {
+                        buffer
+                            .slice_mut(0..builder.vertex.len())
+                            .unwrap()
+                            .write(&builder.vertex);
+                    }
                 }
             }
         }
         self.vertex_length = builder.vertex.len();
 
-        // Index buffer
-        match &mut self.index {
-            None => {
-                self.index = None;
-                self.index = Some(IndexBuffer::dynamic(
-                    &self.ctx,
-                    PrimitiveType::TrianglesList,
-                    &builder.index,
-                )?);
-            }
-            Some(buffer) => {
-                if buffer.get_size() < builder.index.len() {
+        if !builder.index.is_empty() {
+            // Index buffer
+            match &mut self.index {
+                None => {
                     self.index = None;
                     self.index = Some(IndexBuffer::dynamic(
                         &self.ctx,
                         PrimitiveType::TrianglesList,
                         &builder.index,
                     )?);
-                } else {
-                    buffer
-                        .slice_mut(0..builder.index.len())
-                        .unwrap()
-                        .write(&builder.index);
+                }
+                Some(buffer) => {
+                    if buffer.get_size() < builder.index.len() * size_of::<u32>() {
+                        self.index = None;
+                        self.index = Some(IndexBuffer::dynamic(
+                            &self.ctx,
+                            PrimitiveType::TrianglesList,
+                            &builder.index,
+                        )?);
+                    } else {
+                        buffer
+                            .slice_mut(0..builder.index.len())
+                            .unwrap()
+                            .write(&builder.index);
+                    }
                 }
             }
         }
@@ -88,13 +94,15 @@ impl<T: Copy + Vertex> MeshDrawer<T> {
         uniforms: &impl Uniforms,
         draw_parameters: &DrawParameters<'_>,
     ) -> Result<()> {
-        frame.draw(
-            self.vertex.as_ref().wrap_err("Vertex buffer inactive")?.slice(0..self.vertex_length).unwrap(),
-            self.index.as_ref().wrap_err("Index buffer inactive")?.slice(0..self.index_length).unwrap(),
-            program,
-            uniforms,
-            draw_parameters,
-        )?;
+        if self.vertex_length > 0 && self.index_length > 0 {
+            frame.draw(
+                self.vertex.as_ref().wrap_err("Vertex buffer inactive")?.slice(0..self.vertex_length).unwrap(),
+                self.index.as_ref().wrap_err("Index buffer inactive")?.slice(0..self.index_length).unwrap(),
+                program,
+                uniforms,
+                draw_parameters,
+            )?;
+        }
         Ok(())
     }
 }

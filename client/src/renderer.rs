@@ -22,10 +22,11 @@ use crate::renderer::entity::EntityRenderer;
 use crate::renderer::tile::TileRenderer;
 
 mod atlas;
-mod buffer;
-mod builder;
 mod entity;
 mod tile;
+pub mod buffer;
+pub mod builder;
+pub mod debug;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -35,6 +36,16 @@ pub struct PosTexVertex {
 }
 
 implement_vertex!(PosTexVertex, position, texture);
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct PosColorVertex {
+    position: [f32; 2],
+    color: [f32; 3],
+}
+
+implement_vertex!(PosColorVertex, position, color);
+
 
 #[derive(Copy, Clone)]
 pub struct Camera {
@@ -146,7 +157,7 @@ impl WorldRenderer {
         Ok(())
     }
 
-    pub fn draw(&mut self, frontend: &Frontend, camera: Camera, frame: &mut Frame) -> Result<()> {
+    pub fn draw(&mut self, frontend: &Frontend, camera: &Camera, frame: &mut Frame) -> Result<()> {
         let uniforms = uniform! {
             screen_ratio: frontend.screen_ratio,
             atlas: &self.atlas.texture,

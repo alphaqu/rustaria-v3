@@ -5,6 +5,8 @@ pub mod world_pos;
 
 /// World Space
 pub struct WS;
+/// Screen Space
+pub struct SS;
 
 
 pub enum Error {

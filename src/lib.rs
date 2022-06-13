@@ -9,6 +9,7 @@ use ty::chunk_pos::ChunkPos;
 
 use crate::api::Carrier;
 use crate::chunk::Chunk;
+use crate::debug::DummyRenderer;
 use crate::entity::EntityWorld;
 use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
 use crate::network::ServerNetwork;
@@ -21,6 +22,7 @@ pub mod api;
 pub mod player;
 pub mod entity;
 pub mod util;
+pub mod debug;
 
 pub const TPS: usize = 144;
 
@@ -54,7 +56,7 @@ impl Server {
             }
         }
 
-        self.entity.tick(&self.chunks);
+        self.entity.tick(&self.chunks, &mut DummyRenderer);
         self.player.tick(&mut self.network, &self.entity).wrap_err("Ticking player system.")?;
         Ok(())
     }
