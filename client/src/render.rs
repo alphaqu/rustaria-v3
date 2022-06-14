@@ -1,4 +1,6 @@
+use euclid::Vector2D;
 use glium::implement_vertex;
+use rustaria::ty::WS;
 
 pub mod atlas;
 pub mod entity;
@@ -30,6 +32,6 @@ implement_vertex!(PosColorVertex, position, color);
 
 #[derive(Copy, Clone)]
 pub struct Camera {
-    pub pos: [f32; 2],
+    pub pos: Vector2D<f32, WS>,
     pub zoom: f32,
 }

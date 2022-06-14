@@ -53,7 +53,7 @@ impl DebugRenderer {
     pub fn draw(&mut self, frontend: &Frontend, camera: &Camera, frame: &mut Frame) -> Result<()> {
         let uniforms = uniform! {
             screen_ratio: frontend.screen_ratio,
-            player_pos: camera.pos,
+            player_pos: camera.pos.to_array(),
             zoom: camera.zoom,
         };
 

@@ -2,7 +2,7 @@
 
 extern crate core;
 
-use euclid::{rect, vec2};
+use euclid::{rect, vec2, Vector2D};
 use eyre::Result;
 use glfw::{Key, WindowEvent};
 use glium::Surface;
@@ -75,7 +75,7 @@ impl Client {
                 entity: Registry::new(vec![]),
             },
             camera: Camera {
-                pos: [0.0, 0.0],
+                pos: Vector2D::zero(),
                 zoom: 10.0,
             },
             debug,
@@ -120,7 +120,8 @@ impl Client {
 
         if let Some(world) = &mut self.world {
             if let Some(camera) = world.get_camera() {
-                self.camera = camera;
+                self.camera.pos -= (self.camera.pos - camera.pos) * 0.05;
+                self.camera.zoom = camera.zoom;
             }
 
             world.draw(&self.frontend, &self.camera, &mut frame)?

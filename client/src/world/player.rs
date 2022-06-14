@@ -267,7 +267,7 @@ impl PlayerSystem {
 
     pub fn get_camera(&mut self) -> Camera {
         Camera {
-            pos: self.get_pos().to_array(),
+            pos: self.get_pos(),
             zoom: self.zoom,
         }
     }

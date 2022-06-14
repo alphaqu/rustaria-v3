@@ -172,7 +172,7 @@ impl WorldRenderer {
         let uniforms = uniform! {
             screen_ratio: frontend.screen_ratio,
             atlas: &self.atlas.texture,
-            player_pos: camera.pos,
+            player_pos: camera.pos.to_array(),
             zoom: camera.zoom,
         };
 
