@@ -1,9 +1,11 @@
 use euclid::Rect;
 use hecs::EntityBuilder;
+use mlua::{FromLua, Lua, LuaSerdeExt, Value};
 
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
 use crate::api::prototype::Prototype;
+use crate::api::util;
 use crate::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent, PrototypeComponent};
 use crate::ty::WS;
 
@@ -38,5 +40,20 @@ impl Prototype for EntityPrototype {
             builder.add(comp.clone());
         };
         builder
+    }
+}
+
+impl FromLua for EntityPrototype {
+    fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
+        let table = util::lua_table(lua_value)?;
+        Ok(EntityPrototype {
+            position: lua.from_value(table.get("position")?)?,
+            velocity: lua.from_value(table.get("velocity")?)?,
+            collision:  lua.from_value(table.get("collision")?)?,
+            humanoid: lua.from_value(table.get("humanoid")?)?,
+            gravity: lua.from_value(table.get("gravity")?)?,
+            image: table.get("image")?,
+            panel: lua.from_value(table.get("panel")?)?
+        })
     }
 }

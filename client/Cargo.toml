@@ -22,3 +22,6 @@ glium = { version = "0.31.0", default-features = false, features = [] }
 image = { version = "0.24.2", default-features = false, features = ["png"] }
 rectangle-pack = "0.4.2"
 
+mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
+
+

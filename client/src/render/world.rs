@@ -2,7 +2,7 @@ use euclid::{rect, vec2};
 use glium::{Blend, DrawParameters, Frame, Program, uniform};
 use glium::program::SourceCode;
 
-use rustaria::api::Carrier;
+use rustaria::api::{Carrier, Resources};
 use rustaria::api::registry::MappedRegistry;
 use rustaria::chunk::CHUNK_SIZE;
 use rustaria::chunk::storage::ChunkStorage;
@@ -38,7 +38,7 @@ pub(crate) struct WorldRenderer {
 }
 
 impl WorldRenderer {
-    pub fn new(frontend: &Frontend, carrier: &Carrier) -> eyre::Result<Self> {
+    pub fn new(frontend: &Frontend, resources: &Resources, carrier: &Carrier) -> eyre::Result<Self> {
         let mut images = Vec::new();
         for tile in carrier.tile.entries() {
             if let Some(image) = &tile.image {
@@ -52,7 +52,7 @@ impl WorldRenderer {
             }
         }
 
-        let atlas = Atlas::new(frontend, carrier, &images)?;
+        let atlas = Atlas::new(frontend, resources,carrier, &images)?;
         let tile_renderers = carrier.tile.map(|_, tile| {
             tile.image.as_ref().map(|image| TileRenderer {
                 tex_pos: atlas.get(image),

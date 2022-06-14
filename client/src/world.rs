@@ -1,4 +1,4 @@
-use rustaria::api::Carrier;
+use rustaria::api::{Carrier, Resources};
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::entity::EntityWorld;
 use rustaria::network::{ClientNetwork, new_networking};
@@ -26,7 +26,7 @@ pub struct ClientWorld {
 }
 
 impl ClientWorld {
-	pub fn new_integrated(frontend: &Frontend, carrier: &Carrier, chunks: ChunkStorage) -> Result<ClientWorld> {
+	pub fn new_integrated(frontend: &Frontend, resources: &Resources, carrier: &Carrier, chunks: ChunkStorage) -> Result<ClientWorld> {
 		let (network, server_network) = new_networking();
 		// Send join packet
 		network.send(ServerBoundPlayerPacket::Join())?;
@@ -37,7 +37,7 @@ impl ClientWorld {
 			player: PlayerSystem::new(carrier)?,
 			entity: EntityWorld::new(carrier)?,
 			chunks,
-			renderer: WorldRenderer::new(frontend, carrier)?
+			renderer: WorldRenderer::new(frontend, resources, carrier)?
 		})
 	}
 

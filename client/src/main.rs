@@ -6,10 +6,11 @@ use euclid::{rect, vec2};
 use eyre::Result;
 use glfw::{Key, WindowEvent};
 use glium::Surface;
+use mlua::Lua;
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format;
 use tracing_subscriber::util::SubscriberInitExt;
-use rustaria::api::{Assets, Carrier, CarrierAccess};
+use rustaria::api::{Resources, Carrier, CarrierAccess, Api};
 
 use crate::frontend::Frontend;
 use world::player::PlayerSystem;
@@ -46,6 +47,8 @@ fn main() -> Result<()> {
 }
 
 pub struct Client {
+    api: Api,
+    resources: Resources,
     carrier: Carrier,
     camera: Camera,
     debug: DebugRenderer,
@@ -63,10 +66,13 @@ impl Client {
         debug.enable(DebugKind::ChunkBorders);
 
         Ok(Client {
+            api: Api {
+                lua: Lua::new(),
+            },
+            resources: Resources {},
             carrier: Carrier {
                 tile: Registry::new(vec![]),
                 entity: Registry::new(vec![]),
-                assets: Assets {}
             },
             camera: Camera {
                 pos: [0.0, 0.0],
@@ -157,6 +163,7 @@ impl Client {
 
         ClientWorld::new_integrated(
             &self.frontend,
+            &self.resources,
             &self.carrier,
             ChunkStorage::new(9, 9, out).unwrap(),
         )
@@ -164,58 +171,61 @@ impl Client {
 
     pub fn reload(&mut self) {
         info!("reloading");
-        self.carrier = Carrier {
-            tile: Registry::new(vec![
-                (
-                    Identifier::new("dirt"),
-                    TilePrototype {
-                        image: Some(Identifier::new("image/tile/dirt.png")),
-                        collision: true,
-                        connection_type: ConnectionType::Connected
-                    },
-                ),
-                (
-                    Identifier::new("air"),
-                    TilePrototype {
-                        image: None,
-                        collision: false,
-                        connection_type: ConnectionType::Isolated
-                    },
-                ),
-            ]),
-            entity: Registry::new(vec![(
-                Identifier::new("player"),
-                EntityPrototype {
-                    position: PositionComponent {
-                        pos: vec2(24.0, 20.0),
-                    },
-                    velocity: Some(PhysicsComponent {
-                        vel: Default::default(),
-                        accel: Default::default(),
-                    }),
-                    collision: Some(CollisionComponent {
-                        collision_box: rect(-1.0, -1.0, 2.0, 2.0),
-                        collided: Default::default(),
-                    }),
-                    humanoid: Some(HumanoidComponent {
-                        jump_amount: 15.0,
-                        jump_speed: 20.0,
-                        run_acceleration: 0.08,
-                        run_slowdown: 0.2,
-                        run_max_speed: 11.0,
+        self.carrier = self.api.reload(&self.resources);
 
-                        // ignore this shit
-                        dir: Default::default(),
-                        jumping: false,
-                        jumped: false,
-                        jump_frames_remaining: 0.0,
-                    }),
-                    gravity: Some(GravityComponent { amount: 1.0 }),
-                    image: Some(Identifier::new("image/entity/glisco.png")),
-                    panel: rect(-1.0, -1.0, 2.0, 2.0),
-                },
-            )]),
-            assets: Assets {}
-        };
+
+       //  self.carrier = Registries {
+        //             tile: Registry::new(vec![
+        //                 (
+        //                     Identifier::new("dirt"),
+        //                     TilePrototype {
+        //                         image: Some(Identifier::new("image/tile/dirt.png")),
+        //                         collision: true,
+        //                         connection_type: ConnectionType::Connected
+        //                     },
+        //                 ),
+        //                 (
+        //                     Identifier::new("air"),
+        //                     TilePrototype {
+        //                         image: None,
+        //                         collision: false,
+        //                         connection_type: ConnectionType::Isolated
+        //                     },
+        //                 ),
+        //             ]),
+        //             entity: Registry::new(vec![(
+        //                 Identifier::new("player"),
+        //                 EntityPrototype {
+        //                     position: PositionComponent {
+        //                         pos: vec2(24.0, 20.0),
+        //                     },
+        //                     velocity: Some(PhysicsComponent {
+        //                         vel: Default::default(),
+        //                         accel: Default::default(),
+        //                     }),
+        //                     collision: Some(CollisionComponent {
+        //                         collision_box: rect(-1.0, -1.0, 2.0, 2.0),
+        //                         collided: Default::default(),
+        //                     }),
+        //                     humanoid: Some(HumanoidComponent {
+        //                         jump_amount: 15.0,
+        //                         jump_speed: 20.0,
+        //                         run_acceleration: 0.08,
+        //                         run_slowdown: 0.2,
+        //                         run_max_speed: 11.0,
+        //
+        //                         // ignore this shit
+        //                         dir: Default::default(),
+        //                         jumping: false,
+        //                         jumped: false,
+        //                         jump_frames_remaining: 0.0,
+        //                     }),
+        //                     gravity: Some(GravityComponent { amount: 1.0 }),
+        //                     image: Some(Identifier::new("image/entity/glisco.png")),
+        //                     panel: rect(-1.0, -1.0, 2.0, 2.0),
+        //                 },
+        //             )]),
+        //             resources: Resources {}
+        //         };
     }
 }

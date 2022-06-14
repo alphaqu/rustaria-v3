@@ -24,30 +24,33 @@ pub struct PrototypeComponent {
 	pub id: Id<EntityPrototype>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, serde::Deserialize)]
 pub struct GravityComponent {
 	pub amount: f32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, serde::Deserialize)]
 pub struct PhysicsComponent {
 	pub vel: Vector2D<f32, WS>,
 	pub accel: Vector2D<f32, WS>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, serde::Deserialize)]
+#[serde(transparent)]
 pub struct PositionComponent {
 	pub pos: Vector2D<f32, WS>
 }
 
-#[derive(Clone)]
+#[derive(Clone, serde::Deserialize)]
+#[serde(transparent)]
 pub struct CollisionComponent {
 	pub collision_box: Rect<f32, WS>,
+	#[serde(skip)]
 	pub collided: DirMap<bool>,
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Deserialize)]
 pub struct HumanoidComponent {
 	// Settings
 	pub jump_amount: f32,
@@ -58,8 +61,12 @@ pub struct HumanoidComponent {
 	pub run_max_speed: f32,
 
 	// Runtime stuff
+	#[serde(skip)]
 	pub dir: Vector2D<f32, WS>,
+	#[serde(skip)]
 	pub jumping: bool,
+	#[serde(skip)]
 	pub jumped: bool,
+	#[serde(skip)]
 	pub jump_frames_remaining: f32,
 }

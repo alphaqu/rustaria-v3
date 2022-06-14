@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
+use tracing::{debug, trace};
 
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
@@ -17,6 +18,7 @@ impl<P: Prototype> Registry<P> {
         let mut lookup = Vec::with_capacity(values.len());
         let mut tag_to_id = HashMap::new();
         for (ident, prototype) in values {
+            debug!("Added {ident}");
             unsafe {
                 tag_to_id.insert(
                     ident,

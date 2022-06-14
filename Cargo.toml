@@ -9,13 +9,17 @@ edition = "2021"
 eyre = "0.6.8"
 tracing = "0.1.35"
 
-euclid = "0.22.7"
+serde = { version = "1.0.137", features = ["derive"]}
+euclid = { version = "0.22.7", features = ["serde"] }
 num = "0.4"
 
 hecs = "0.7.6"
 
 crossbeam = "0.8.1"
 parking_lot = "0.12.0"
+
+zip = "0.6.2"
+mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
 
 [workspace]
 members = [
