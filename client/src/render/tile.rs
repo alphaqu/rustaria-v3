@@ -1,7 +1,7 @@
 use euclid::{point2, Rect, size2};
 use rustaria::chunk::ConnectionType;
 
-use rustaria::ty::world_pos::WorldPos;
+use rustaria::ty::block_pos::BlockPos;
 
 use crate::render::atlas::Atlas;
 use crate::render::builder::MeshBuilder;
@@ -14,7 +14,7 @@ pub struct TileRenderer {
 }
 
 impl TileRenderer {
-    pub fn mesh(&self, pos: WorldPos, kind: SpriteConnectionKind, builder: &mut MeshBuilder<PosTexVertex>) {
+    pub fn mesh(&self, pos: BlockPos, kind: SpriteConnectionKind, builder: &mut MeshBuilder<PosTexVertex>) {
         let mut texture = self.tex_pos;
         let tile_height = texture.size.height / 4.0;
         let tile_width = texture.size.width / 12.0;
@@ -26,7 +26,7 @@ impl TileRenderer {
         texture.origin.y += tile_height * (3 - kind_pos[1]) as f32;
 
         builder.push_quad((
-            Rect::<f32, WorldPos>::new(
+            Rect::<f32, BlockPos>::new(
                 point2(pos.x() as f32, pos.y() as f32),
                 size2(1.0, 1.0),
             ),

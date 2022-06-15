@@ -4,19 +4,19 @@ use euclid::Vector2D;
 
 use crate::chunk::CHUNK_SIZE;
 use crate::ty::{Error, Offset};
-use crate::ty::chunk_entry_pos::ChunkEntryPos;
+use crate::ty::block_layer_pos::BlockLayerPos;
 use crate::ty::chunk_pos::ChunkPos;
 use crate::ty::Error::OutOfBounds;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Default)]
-pub struct WorldPos {
+pub struct BlockPos {
     pub chunk: ChunkPos,
-    pub entry: ChunkEntryPos,
+    pub entry: BlockLayerPos,
 }
 
-impl WorldPos {
-    pub fn new(chunk: ChunkPos, entry: ChunkEntryPos) -> WorldPos {
-        WorldPos { chunk, entry }
+impl BlockPos {
+    pub fn new(chunk: ChunkPos, entry: BlockLayerPos) -> BlockPos {
+        BlockPos { chunk, entry }
     }
 
     pub fn x(&self) -> i64 {
@@ -28,7 +28,7 @@ impl WorldPos {
     }
 }
 
-impl Offset<(i8, i8)> for WorldPos {
+impl Offset<(i8, i8)> for BlockPos {
     fn wrapping_offset(self, displacement @ (dx, dy): (i8, i8)) -> Self {
         match Self::checked_offset(self, displacement) {
             Some(s) => s,
@@ -53,13 +53,13 @@ impl Offset<(i8, i8)> for WorldPos {
     }
 }
 
-impl<S> TryFrom<Vector2D<f32, S>> for WorldPos {
+impl<S> TryFrom<Vector2D<f32, S>> for BlockPos {
     type Error = Error;
 
     fn try_from(value: Vector2D<f32, S>) -> Result<Self, Self::Error> {
-        Ok(WorldPos {
+        Ok(BlockPos {
             chunk: ChunkPos::try_from(value)?,
-            entry: ChunkEntryPos::try_new(
+            entry: BlockLayerPos::try_new(
                 (value.x as i64 % CHUNK_SIZE as i64) as u8,
                 (value.y as i64 % CHUNK_SIZE as i64) as u8,
             )
@@ -68,7 +68,7 @@ impl<S> TryFrom<Vector2D<f32, S>> for WorldPos {
     }
 }
 
-impl Display for WorldPos {
+impl Display for BlockPos {
     //123, 432 (3:0@4:4)
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let x = (self.chunk.x as i64 * CHUNK_SIZE as i64) + self.entry.x() as i64;

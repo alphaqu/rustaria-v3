@@ -11,7 +11,7 @@ use rustaria::api::identifier::Identifier;
 use rustaria::api::{Api};
 use rustaria::api::prototype::FactoryPrototype;
 use rustaria::chunk::storage::ChunkStorage;
-use rustaria::chunk::entry::ChunkEntryPrototype;
+use rustaria::chunk::block::BlockPrototype;
 use rustaria::debug::DummyRenderer;
 use rustaria::entity::component::{HumanoidComponent, PositionComponent};
 use rustaria::entity::prototype::EntityPrototype;
@@ -19,7 +19,7 @@ use rustaria::entity::EntityWorld;
 use rustaria::network::{ClientNetwork};
 use rustaria::network::packet::ServerBoundPacket;
 use rustaria::player::{ClientBoundPlayerPacket, PlayerCommand, ServerBoundPlayerPacket};
-use rustaria::ty::world_pos::WorldPos;
+use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::WS;
 
 use crate::{Camera, Frontend};
@@ -173,15 +173,15 @@ impl PlayerSystem {
                 for press in self.presses.drain(..) {
                     match press {
                         Press::Use(x, y) => {
-                            if let Ok(pos) = WorldPos::try_from(vec2::<_, WS>(x, y) + pos) {
+                            if let Ok(pos) = BlockPos::try_from(vec2::<_, WS>(x, y) + pos) {
 
                                 if let Some(chunk) =  chunks.get_mut(pos.chunk) {
                                     for (id, layer) in chunk.layers.iter_mut() {
-                                        let prototype = api.carrier.chunk_layers.get(id);
+                                        let prototype = api.carrier.block_layers.get(id);
                                         let entry_id = prototype.registry.identifier_to_id(&Identifier::new("air")).expect("where my air");
 
                                         layer[pos.entry] = prototype.registry.get(entry_id).create(entry_id);
-                                        network.send(ServerBoundPacket::SetChunkEntry(pos, id, entry_id))?;
+                                        network.send(ServerBoundPacket::SetBlock(pos, id, entry_id))?;
                                     }
                                 }
 
@@ -197,11 +197,11 @@ impl PlayerSystem {
     }
 
     pub fn packet(
-	    &mut self,
-	    carrier: &Api,
-	    packet: ClientBoundPlayerPacket,
-	    entity_world: &mut EntityWorld,
-	    chunks: &ChunkStorage,
+        &mut self,
+        api: &Api,
+        packet: ClientBoundPlayerPacket,
+        entity_world: &mut EntityWorld,
+        chunks: &ChunkStorage,
     ) -> Result<()> {
         match packet {
             ClientBoundPlayerPacket::RespondPos(tick, pos) => {
@@ -229,7 +229,7 @@ impl PlayerSystem {
                             entity.dir = speed.dir;
                             entity.jumping = speed.jumping;
                         }
-                        self.base_server_world.tick(carrier, chunks, &mut DummyRenderer);
+                        self.base_server_world.tick(api, chunks, &mut DummyRenderer);
 
                         // If we reach the tick that we currently received,
                         // stop as the next events are the ones that the server has not yet seen.
@@ -239,7 +239,7 @@ impl PlayerSystem {
                     }
 
                     // Recompile our prediction
-                    self.compile_prediction(carrier, chunks);
+                    self.compile_prediction(api, chunks);
                 }
             }
             ClientBoundPlayerPacket::Joined(entity) => {
@@ -312,7 +312,7 @@ impl PlayerSystem {
 
     // When a client receives a packet, rebase the base_server_entity and
     // then apply the events not yet to be responded by the server.
-    fn compile_prediction(&mut self, carrier: &Api, chunks: &ChunkStorage) -> Option<()> {
+    fn compile_prediction(&mut self, api: &Api, chunks: &ChunkStorage) -> Option<()> {
         let entity = self.server_player?;
 
         // Put prediction on the server value
@@ -332,7 +332,7 @@ impl PlayerSystem {
                 prediction.dir = speed.dir;
                 prediction.jumping = speed.jumping;
             }
-            self.prediction_world.tick(carrier, chunks, &mut DummyRenderer);
+            self.prediction_world.tick(api, chunks, &mut DummyRenderer);
         }
 
         let mut prediction = self

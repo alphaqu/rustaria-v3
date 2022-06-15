@@ -3,9 +3,9 @@ use crate::ty;
 use crate::ty::Offset;
 
 #[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, Default)]
-pub struct ChunkEntryPos(u8);
+pub struct BlockLayerPos(u8);
 
-impl ChunkEntryPos {
+impl BlockLayerPos {
     pub fn new(x: u8, y: u8) -> Self {
         assert!(
             x < CHUNK_SIZE as u8,
@@ -44,7 +44,7 @@ impl ChunkEntryPos {
 }
 
 // TODO(leocth): add Offset<ChunkSubPos> impl for (i8, i8)
-impl Offset<(i8, i8)> for ChunkEntryPos {
+impl Offset<(i8, i8)> for BlockLayerPos {
     fn wrapping_offset(self, (dx, dy): (i8, i8)) -> Self {
         // NOTE(leocth): no joke. this is how `wrapping_add_signed` is implemented.
         // https://doc.rust-lang.org/src/core/num/uint_macros.rs.html#1205-1207

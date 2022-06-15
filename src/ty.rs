@@ -1,7 +1,7 @@
-pub mod chunk_entry_pos;
+pub mod block_layer_pos;
 pub mod chunk_pos;
 pub mod direction;
-pub mod world_pos;
+pub mod block_pos;
 
 /// World Space
 pub struct WS;

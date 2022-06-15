@@ -6,7 +6,7 @@ use crate::debug::{DebugKind, DebugRendererImpl};
 use crate::entity::component::{CollisionComponent, PhysicsComponent, PositionComponent};
 use crate::entity::EntityStorage;
 use crate::ty::direction::DirMap;
-use crate::ty::world_pos::WorldPos;
+use crate::ty::block_pos::BlockPos;
 use crate::ty::WS;
 use crate::util::aabb;
 use crate::{Api, ChunkStorage};
@@ -15,11 +15,11 @@ pub struct CollisionSystem;
 
 impl CollisionSystem {
     pub fn tick(
-	    &mut self,
-	    carrier: &Api,
-	    storage: &mut EntityStorage,
-	    chunks: &ChunkStorage,
-	    debug: &mut impl DebugRendererImpl,
+        &mut self,
+        api: &Api,
+        storage: &mut EntityStorage,
+        chunks: &ChunkStorage,
+        debug: &mut impl DebugRendererImpl,
     ) {
         for (_, (collision, position, physics)) in storage.query_mut::<(
             &mut CollisionComponent,
@@ -55,7 +55,7 @@ impl CollisionSystem {
             for x in x1..x2 {
                 for y in y1..y2 {
                     test_collision(
-                        carrier,
+                        api,
                         vec2(x as f32, y as f32),
                         physics.vel,
                         old_rect,
@@ -93,10 +93,10 @@ fn test_collision(
     collisions: &mut Vec<(Rect<f32, WS>, f32)>,
     debug: &mut impl DebugRendererImpl,
 ) {
-    if let Ok(world_pos) = WorldPos::try_from(pos) {
+    if let Ok(world_pos) = BlockPos::try_from(pos) {
         if let Some(chunk) = chunks.get(world_pos.chunk) {
             for (id, layer) in chunk.layers.iter() {
-                let prototype = api.carrier.chunk_layers.get(id);
+                let prototype = api.carrier.block_layers.get(id);
                 if !prototype.collision || !layer[world_pos.entry].collision {
                     // dont move.
                     continue;

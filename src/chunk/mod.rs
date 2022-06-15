@@ -1,21 +1,23 @@
 use std::ops::{Index, IndexMut};
 
 
-use entry::ChunkEntry;
+use block::Block;
 use crate::api::registry::MappedRegistry;
-use crate::chunk::entry::ChunkLayerPrototype;
+use crate::chunk::block::BlockLayerPrototype;
 
-use crate::ty::chunk_entry_pos::ChunkEntryPos;
+use crate::ty::block_layer_pos::BlockLayerPos;
 
 
-pub mod entry;
+pub mod block;
 pub mod storage;
 
 pub const CHUNK_SIZE: usize = 16;
 
+pub type BlockLayer = ChunkLayer<Block>;
+
 #[derive(Clone)]
 pub struct Chunk {
-	pub layers: MappedRegistry<ChunkLayerPrototype, ChunkLayer<ChunkEntry>>,
+	pub layers: MappedRegistry<BlockLayerPrototype, BlockLayer>,
 }
 
 // Layer
@@ -25,18 +27,18 @@ pub struct ChunkLayer<T: Clone> {
 }
 
 impl<T: Clone> ChunkLayer<T>  {
-	pub fn entries(&self, mut func: impl FnMut(ChunkEntryPos, &T)) {
+	pub fn entries(&self, mut func: impl FnMut(BlockLayerPos, &T)) {
 		for y in 0..CHUNK_SIZE {
 			for x in 0..CHUNK_SIZE {
-				func(ChunkEntryPos::new(x as u8, y as u8), &self.data[y][x]);
+				func(BlockLayerPos::new(x as u8, y as u8), &self.data[y][x]);
 			}
 		}
 	}
 
-	pub fn entries_mut(&mut self, mut func: impl FnMut(ChunkEntryPos, &mut T)) {
+	pub fn entries_mut(&mut self, mut func: impl FnMut(BlockLayerPos, &mut T)) {
 		for y in 0..CHUNK_SIZE {
 			for x in 0..CHUNK_SIZE {
-				func(ChunkEntryPos::new(x as u8, y as u8), &mut self.data[y][x]);
+				func(BlockLayerPos::new(x as u8, y as u8), &mut self.data[y][x]);
 			}
 		}
 	}
@@ -61,16 +63,16 @@ impl<T: Clone + Copy> ChunkLayer<T> {
 	}
 }
 
-impl<T: Clone> Index<ChunkEntryPos> for ChunkLayer<T> {
+impl<T: Clone> Index<BlockLayerPos> for ChunkLayer<T> {
 	type Output = T;
 
-	fn index(&self, index: ChunkEntryPos) -> &Self::Output {
+	fn index(&self, index: BlockLayerPos) -> &Self::Output {
 		&self.data[index.y() as usize][index.x() as usize]
 	}
 }
 
-impl<T: Clone> IndexMut<ChunkEntryPos> for ChunkLayer<T> {
-	fn index_mut(&mut self, index: ChunkEntryPos) -> &mut Self::Output {
+impl<T: Clone> IndexMut<BlockLayerPos> for ChunkLayer<T> {
+	fn index_mut(&mut self, index: BlockLayerPos) -> &mut Self::Output {
 		&mut self.data[index.y() as usize][index.x() as usize]
 	}
 }

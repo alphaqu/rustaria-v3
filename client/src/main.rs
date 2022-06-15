@@ -131,7 +131,7 @@ impl Client {
         for y in 0..9 {
             for x in 0..9 {
                 out.push(Chunk {
-                    layers: self.api.carrier.chunk_layers.map(|id, prototype| {
+                    layers: self.api.carrier.block_layers.map(|id, prototype| {
                         let dirt = prototype.registry.create(
                             prototype
                                 .registry

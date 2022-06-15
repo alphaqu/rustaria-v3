@@ -1,6 +1,6 @@
 use rustaria::chunk::ConnectionType;
 use rustaria::chunk::{ChunkLayer, CHUNK_SIZE};
-use rustaria::ty::chunk_entry_pos::ChunkEntryPos;
+use rustaria::ty::block_layer_pos::BlockLayerPos;
 use rustaria::ty::direction::{DirMap, Direction};
 use std::ops::{Deref, DerefMut};
 
@@ -48,7 +48,7 @@ impl NeighborMatrixBuilder {
         let y_length = dir.offset_y().unsigned_abs() * c;
         for y in y_offset..=x_length + y_offset {
             for x in x_offset..=y_length + x_offset {
-                let neighbor_sub_pos = ChunkEntryPos::new(x, y).euclid_offset(dir.offset());
+                let neighbor_sub_pos = BlockLayerPos::new(x, y).euclid_offset(dir.offset());
                 let tile = self.layer.data[y as usize][x as usize];
                 let neighbor_tile = neighbor[neighbor_sub_pos];
                 let ty = if tile == ConnectionType::Connected

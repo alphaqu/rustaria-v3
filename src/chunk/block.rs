@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-use euclid::default::Rect;
 use mlua::{FromLua, Function, Lua, LuaSerdeExt, Table, Value};
-use tracing::{info_span, trace};
+use tracing::{info_span};
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
 use crate::api::prototype::{FactoryPrototype, KernelId, Prototype};
@@ -10,39 +8,39 @@ use crate::api::util::lua_table;
 use crate::chunk::ConnectionType;
 
 #[derive(Clone, Copy)]
-pub struct ChunkEntry {
-	pub id: Id<ChunkEntryPrototype>,
+pub struct Block {
+	pub id: Id<BlockPrototype>,
 	pub collision: bool,
 }
 
-impl KernelId<ChunkEntryPrototype> for ChunkEntry {
-	fn get_id(&self) -> Id<ChunkEntryPrototype> {
+impl KernelId<BlockPrototype> for Block {
+	fn get_id(&self) -> Id<BlockPrototype> {
 		self.id
 	}
 }
 
-pub struct ChunkEntryPrototype {
+pub struct BlockPrototype {
 	pub image: Option<Identifier>,
 	pub collision: bool,
 	pub connection_type: ConnectionType,
 }
 
-impl Prototype for ChunkEntryPrototype {
+impl Prototype for BlockPrototype {
 }
 
-impl FactoryPrototype for ChunkEntryPrototype {
-	type Item = ChunkEntry;
+impl FactoryPrototype for BlockPrototype {
+	type Item = Block;
 	fn create(&self, id: Id<Self>) -> Self::Item {
-		ChunkEntry { id, collision: self.collision }
+		Block { id, collision: self.collision }
 	}
 }
 
-impl FromLua for ChunkEntryPrototype {
+impl FromLua for BlockPrototype {
 	fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
 		let _span = info_span!("FromLua ChunkEntryPrototype").entered();
 
 		let table = lua_table(lua_value)?;
-		Ok(ChunkEntryPrototype {
+		Ok(BlockPrototype {
 			image: table.get("image")?,
 			collision: table.get("collision")?,
 			connection_type: lua.from_value(table.get("connection_type")?)?,
@@ -51,25 +49,25 @@ impl FromLua for ChunkEntryPrototype {
 }
 
 /// TODO sprite mappings and stuff
-pub struct ChunkLayerPrototype {
-	pub registry: Registry<ChunkEntryPrototype>,
+pub struct BlockLayerPrototype {
+	pub registry: Registry<BlockPrototype>,
 	pub get_uv: Function,
 	pub get_rect: Function,
 	pub collision: bool,
 }
 
-impl FromLua for ChunkLayerPrototype {
+impl FromLua for BlockLayerPrototype {
 	fn from_lua(value: Value, _: &Lua) -> mlua::Result<Self> {
 		let _span = info_span!("FromLua ChunkLayerPrototype").entered();
 		let table = lua_table(value)?;
 		let entries: Table = table.get("entries")?;
 
 		let mut out = Vec::new();
-		for value in entries.pairs::<Identifier, ChunkEntryPrototype>() {
+		for value in entries.pairs::<Identifier, BlockPrototype>() {
 			out.push(value?);
 		}
 
-		Ok(ChunkLayerPrototype {
+		Ok(BlockLayerPrototype {
 			registry: Registry::new(out),
 			get_uv: table.get("get_uv")?,
 			get_rect: table.get("get_rect")?,
@@ -78,5 +76,5 @@ impl FromLua for ChunkLayerPrototype {
 	}
 }
 
-impl Prototype for ChunkLayerPrototype {
+impl Prototype for BlockLayerPrototype {
 }

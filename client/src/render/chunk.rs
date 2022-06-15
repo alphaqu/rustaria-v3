@@ -1,9 +1,9 @@
 use euclid::{point2, size2, Rect, Vector2D, vec2, Point2D, Size2D};
 use rustaria::api::id::Id;
 use rustaria::api::registry::MappedRegistry;
-use rustaria::chunk::entry::{ChunkEntry, ChunkEntryPrototype, ChunkLayerPrototype};
+use rustaria::chunk::block::{Block, BlockPrototype, BlockLayerPrototype};
 use rustaria::chunk::storage::ChunkStorage;
-use rustaria::chunk::{Chunk, CHUNK_SIZE, ChunkLayer, ConnectionType};
+use rustaria::chunk::{BlockLayer, Chunk, CHUNK_SIZE, ChunkLayer, ConnectionType};
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::direction::{DirMap, Direction};
 use rustaria::ty::{Offset, WS};
@@ -13,7 +13,7 @@ use mlua::{LuaSerdeExt, Table, ToLua, Value};
 use tracing::{info_span, span, trace, trace_span};
 use rustaria::api::Api;
 
-use rustaria::ty::world_pos::WorldPos;
+use rustaria::ty::block_pos::BlockPos;
 use crate::{Camera, Frontend};
 
 use crate::render::atlas::Atlas;
@@ -24,15 +24,15 @@ use crate::render::PosTexVertex;
 
 pub struct ChunkRenderer {
     drawer: MeshDrawer<PosTexVertex>,
-    layer_renderers: MappedRegistry<ChunkLayerPrototype, ChunkLayerRenderer>,
+    layer_renderers: MappedRegistry<BlockLayerPrototype, BlockLayerRenderer>,
 }
 
 impl ChunkRenderer {
     pub fn new(api: &Api, frontend: &Frontend, atlas: &Atlas) -> Result<ChunkRenderer> {
         Ok(ChunkRenderer  {
             drawer: frontend.create_drawer()?,
-            layer_renderers: api.carrier.chunk_layers.map(|id, prototype| {
-                ChunkLayerRenderer::new(api, prototype, atlas)
+            layer_renderers: api.carrier.block_layers.map(|id, prototype| {
+                BlockLayerRenderer::new(api, prototype, atlas)
             })
         })
     }
@@ -102,13 +102,13 @@ pub struct KindDesc {
     rect: Rect<f32, WS>,
 }
 
-pub struct ChunkLayerRenderer {
-    entry_renderers: MappedRegistry<ChunkEntryPrototype, Option<ChunkLayerEntryRenderer>>,
+pub struct BlockLayerRenderer {
+    entry_renderers: MappedRegistry<BlockPrototype, Option<BlockRenderer>>,
     kind_descs: Vec<KindDesc>,
 }
 
-impl ChunkLayerRenderer {
-    pub fn new(api: &Api, prototype: &ChunkLayerPrototype, atlas: &Atlas) -> ChunkLayerRenderer {
+impl BlockLayerRenderer {
+    pub fn new(api: &Api, prototype: &BlockLayerPrototype, atlas: &Atlas) -> BlockLayerRenderer {
         let _span = trace_span!("test").entered();
         let mut kind_uvs = Vec::new();
         for value in SpriteConnectionKind::iter() {
@@ -117,10 +117,10 @@ impl ChunkLayerRenderer {
                 rect: api.lua.from_value(prototype.get_rect.call(format!("{value:?}")).unwrap()).unwrap()
             });
         }
-        ChunkLayerRenderer  {
+        BlockLayerRenderer {
             entry_renderers: prototype.registry.map(|id, prototype| {
                 prototype.image.as_ref().map(|image| {
-                    ChunkLayerEntryRenderer {
+                    BlockRenderer {
                         tex_pos: atlas.get(image),
                         connection_type: prototype.connection_type
                     }
@@ -133,11 +133,11 @@ impl ChunkLayerRenderer {
     pub fn mesh_chunk_layer(
         &self,
         chunk: ChunkPos,
-        layer: &ChunkLayer<ChunkEntry>,
-        neighbors: DirMap<Option<&ChunkLayer<ChunkEntry>>>,
+        layer: &BlockLayer,
+        neighbors: DirMap<Option<&BlockLayer>>,
         builder: &mut MeshBuilder<PosTexVertex>,
     ) {
-        let func = |tile: &ChunkEntry| {
+        let func = |tile: &Block| {
             self.entry_renderers.get(tile.id).as_ref().map(|renderer| renderer.connection_type)
         };
 
@@ -154,7 +154,7 @@ impl ChunkLayerRenderer {
         layer.entries(|entry, connection| {
             if let Some(renderer) = self.entry_renderers.get(connection.id) {
 
-                renderer.mesh(WorldPos::new(chunk, entry),
+                renderer.mesh(BlockPos::new(chunk, entry),
                               &self.kind_descs[connection_layer[entry] as u8 as usize],
                               builder);
             }
@@ -162,15 +162,15 @@ impl ChunkLayerRenderer {
     }
 }
 
-pub struct ChunkLayerEntryRenderer {
+pub struct BlockRenderer {
     pub tex_pos: Rect<f32, Atlas>,
     pub connection_type: ConnectionType,
 }
 
-impl ChunkLayerEntryRenderer {
+impl BlockRenderer {
     pub fn mesh(
         &self,
-        pos: WorldPos,
+        pos: BlockPos,
         desc: &KindDesc,
         builder: &mut MeshBuilder<PosTexVertex>,
     ) {

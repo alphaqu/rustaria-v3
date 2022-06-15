@@ -5,7 +5,7 @@ use std::io;
 use crate::api::identifier::Identifier;
 use crate::api::prototype::{Prototype};
 use crate::api::registry::Registry;
-use crate::chunk::entry::{ChunkLayerPrototype};
+use crate::chunk::block::{BlockLayerPrototype};
 use crate::entity::prototype::EntityPrototype;
 use crate::multi_deref_fields;
 use crate::ty::MultiDeref;
@@ -27,7 +27,7 @@ impl Api {
         Api {
             lua: Lua::new(),
             carrier: Carrier {
-                chunk_layers: Registry::new(vec![]),
+                block_layers: Registry::new(vec![]),
                 entity: Registry::new(vec![])
             },
             resources: Resources {}
@@ -41,7 +41,7 @@ impl Api {
         self.lua.load(&result).exec().unwrap();
 
         self.carrier = Carrier {
-            chunk_layers: self.extract("chunk_layers"),
+            block_layers: self.extract("chunk_layers"),
             entity: self.extract("entity"),
         };
     }
@@ -83,12 +83,12 @@ impl Resources {
 }
 
 pub struct Carrier {
-    pub chunk_layers: Registry<ChunkLayerPrototype>,
+    pub block_layers: Registry<BlockLayerPrototype>,
     pub entity: Registry<EntityPrototype>,
 }
 
 
 multi_deref_fields!(Carrier {
-    chunk_layers: Registry<ChunkLayerPrototype>,
+    block_layers: Registry<BlockLayerPrototype>,
     entity: Registry<EntityPrototype>
 });
