@@ -35,7 +35,6 @@ mod world;
 fn main() -> Result<()> {
     let fmt_layer = fmt::layer()
         //.with_max_level(Level::TRACE)
-        .with_span_events(FmtSpan::ACTIVE)
         .event_format(format().compact())
         .without_time();
     tracing_subscriber::registry()
