@@ -106,7 +106,7 @@ impl ChunkRenderer {
     ) {
         if let Some(chunk) = chunks.get(pos) {
             let mut chunk_builder = MeshBuilder::new();
-            self.mesh_chunk(pos, chunk, chunks, &mut chunk_builder);
+            self.mesh_chunk(pos, chunk, chunks, &mut chunk_builder, debug);
             self.cached_meshes.insert(pos, chunk_builder);
             draw_debug!(
                 debug,
@@ -154,6 +154,7 @@ impl ChunkRenderer {
         chunk: &Chunk,
         chunks: &ChunkStorage,
         builder: &mut MeshBuilder<PosTexVertex>,
+        debug: &mut DebugRenderer,
     ) {
         let mut neighbors = DirMap::new([None; 4]);
         for dir in Direction::values() {
@@ -170,6 +171,7 @@ impl ChunkRenderer {
                 layer,
                 neighbors.map(|_, option| option.map(|c| c.layers.get(id))),
                 builder,
+                debug
             );
         }
     }
@@ -217,6 +219,7 @@ impl BlockLayerRenderer {
         layer: &BlockLayer,
         neighbors: DirMap<Option<&BlockLayer>>,
         builder: &mut MeshBuilder<PosTexVertex>,
+        debug: &mut DebugRenderer,
     ) {
         let func = |tile: &Block| {
             self.entry_renderers
@@ -241,6 +244,7 @@ impl BlockLayerRenderer {
                     BlockPos::new(chunk, entry),
                     &self.kind_descs[connection_layer[entry] as u8 as usize],
                     builder,
+                    debug
                 );
             }
         });
@@ -253,22 +257,25 @@ pub struct BlockRenderer {
 }
 
 impl BlockRenderer {
-    pub fn mesh(&self, pos: BlockPos, desc: &KindDesc, builder: &mut MeshBuilder<PosTexVertex>) {
+    pub fn mesh(&self, pos: BlockPos, desc: &KindDesc, builder: &mut MeshBuilder<PosTexVertex>, debug: &mut DebugRenderer) {
         let mut texture = self.tex_pos;
 
         let variation = get_variation(pos) % ((texture.size.width / texture.size.height) as u32);
-
         let layout_width = texture.size.width / 3.0;
-        let layout_height = texture.size.height;
 
+        let layout_height = texture.size.height;
         texture.origin.x += layout_width * variation as f32;
+
         texture.size.width = desc.uv.size.width * layout_width;
         texture.size.height = desc.uv.size.height * layout_height;
         texture.origin.x += desc.uv.origin.x * layout_width;
         texture.origin.y += desc.uv.origin.y * layout_height;
-
         let mut quad_pos = desc.rect;
+
         quad_pos.origin += size2(pos.x() as f32, pos.y() as f32);
+
+        const VARIATION_COLORS: [u32; 3] = [0xff0000, 0x00ff00, 0x0000ff];
+        draw_debug!(debug, DebugCategory::ChunkMeshing, vec2(pos.x() as f32 + 0.5, pos.y() as f32 + 0.5), VARIATION_COLORS[(variation % 3) as usize], 5.0, 0.5);
         builder.push_quad((quad_pos, texture));
     }
 }
@@ -276,7 +283,7 @@ impl BlockRenderer {
 fn get_variation(pos: BlockPos) -> u32 {
     let x = (pos.x() & 0xFFFFFFFF) as u32;
     let y = (pos.y() & 0xFFFFFFFF) as u32;
-    let offset_x = x.overflowing_add(69420).0.overflowing_mul(69).0;
+    let offset_x = x.overflowing_mul(69).0;
     let mut v = offset_x.overflowing_mul(y + 420).0;
     v ^= v.overflowing_shl(13).0;
     v ^= v.overflowing_shr(7).0;
