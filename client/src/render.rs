@@ -4,7 +4,6 @@ use rustaria::ty::WS;
 
 pub mod atlas;
 pub mod entity;
-pub mod tile;
 pub mod buffer;
 pub mod builder;
 pub mod debug;

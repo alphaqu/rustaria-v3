@@ -6,7 +6,6 @@ use euclid::{rect, Rect, size2, vec2, Vector2D};
 use eyre::Result;
 use glium::{Blend, DrawParameters, Frame, Program, uniform};
 use mlua::LuaSerdeExt;
-use tracing::{info, trace_span};
 
 use rustaria::api::Api;
 use rustaria::api::registry::MappedRegistry;
@@ -42,7 +41,7 @@ impl ChunkRenderer {
             layer_renderers: api
                 .carrier
                 .block_layers
-                .map(|id, prototype| BlockLayerRenderer::new(api, prototype, atlas)),
+                .map(|_, prototype| BlockLayerRenderer::new(api, prototype, atlas)),
             chunks_dirty: true,
         })
     }
@@ -106,7 +105,6 @@ impl ChunkRenderer {
         debug: &mut DebugRenderer,
     ) {
         if let Some(chunk) = chunks.get(pos) {
-            let start = Instant::now();
             let mut chunk_builder = MeshBuilder::new();
             self.mesh_chunk(pos, chunk, chunks, &mut chunk_builder);
             self.cached_meshes.insert(pos, chunk_builder);
@@ -146,7 +144,7 @@ impl ChunkRenderer {
             ..DrawParameters::default()
         };
         self.drawer
-            .draw(frame, &pos_color_program, &uniforms, &draw_parameters)?;
+            .draw(frame, pos_color_program, &uniforms, &draw_parameters)?;
         Ok(())
     }
 
@@ -170,7 +168,7 @@ impl ChunkRenderer {
             self.layer_renderers.get(id).mesh_chunk_layer(
                 pos,
                 layer,
-                neighbors.map(|dir, option| option.map(|c| c.layers.get(id))),
+                neighbors.map(|_, option| option.map(|c| c.layers.get(id))),
                 builder,
             );
         }
@@ -203,7 +201,7 @@ impl BlockLayerRenderer {
             });
         }
         BlockLayerRenderer {
-            entry_renderers: prototype.registry.map(|id, prototype| {
+            entry_renderers: prototype.registry.map(|_, prototype| {
                 prototype.image.as_ref().map(|image| BlockRenderer {
                     tex_pos: atlas.get(image),
                     connection_type: prototype.connection_type,
@@ -258,16 +256,30 @@ impl BlockRenderer {
     pub fn mesh(&self, pos: BlockPos, desc: &KindDesc, builder: &mut MeshBuilder<PosTexVertex>) {
         let mut texture = self.tex_pos;
 
-        let tile_width = texture.size.width / 3.0;
-        let tile_height = texture.size.height;
+        let variation = get_variation(pos) % ((texture.size.width / texture.size.height) as u32);
 
-        texture.size.width = desc.uv.size.width * tile_width;
-        texture.size.height = desc.uv.size.height * tile_height;
-        texture.origin.x += desc.uv.origin.x * tile_width;
-        texture.origin.y += desc.uv.origin.y * tile_height;
+        let layout_width = texture.size.width / 3.0;
+        let layout_height = texture.size.height;
+
+        texture.origin.x += layout_width * variation as f32;
+        texture.size.width = desc.uv.size.width * layout_width;
+        texture.size.height = desc.uv.size.height * layout_height;
+        texture.origin.x += desc.uv.origin.x * layout_width;
+        texture.origin.y += desc.uv.origin.y * layout_height;
 
         let mut quad_pos = desc.rect;
         quad_pos.origin += size2(pos.x() as f32, pos.y() as f32);
         builder.push_quad((quad_pos, texture));
     }
+}
+
+fn get_variation(pos: BlockPos) -> u32 {
+    let x = (pos.x() & 0xFFFFFFFF) as u32;
+    let y = (pos.y() & 0xFFFFFFFF) as u32;
+    let offset_x = x.overflowing_add(69420).0.overflowing_mul(69).0;
+    let mut v = offset_x.overflowing_mul(y + 420).0;
+    v ^= v.overflowing_shl(13).0;
+    v ^= v.overflowing_shr(7).0;
+    v ^= v.overflowing_shl(17).0;
+    v
 }

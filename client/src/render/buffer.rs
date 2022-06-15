@@ -7,7 +7,6 @@ use glium::{
 };
 use glium::index::PrimitiveType;
 use glium::uniforms::Uniforms;
-use tracing::trace;
 
 use crate::Frontend;
 use crate::render::builder::MeshBuilder;
