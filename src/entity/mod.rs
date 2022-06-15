@@ -4,9 +4,9 @@ use eyre::Result;
 use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
 
 use crate::{Chunk, ChunkPos, ChunkStorage, iter_components};
-use crate::api::Carrier;
+use crate::api::Api;
 use crate::api::id::Id;
-use crate::api::prototype::Prototype;
+use crate::api::prototype::{FactoryPrototype, Prototype};
 use crate::api::registry::MappedRegistry;
 use crate::debug::DebugRendererImpl;
 use crate::entity::prototype::EntityPrototype;
@@ -24,10 +24,10 @@ pub struct EntityStorage {
 }
 
 impl EntityStorage {
-	pub fn new(carrier: &Carrier) -> EntityStorage {
+	pub fn new(api: &Api) -> EntityStorage {
 		EntityStorage {
 			world: Default::default(),
-			templates: carrier.entity.map(|id, prototype| prototype.create(id))
+			templates: api.carrier.entity.map(|id, prototype| prototype.create(id))
 		}
 	}
 
@@ -95,9 +95,9 @@ pub struct EntityWorld {
 }
 
 impl EntityWorld {
-	pub fn new(carrier: &Carrier) -> Result<EntityWorld> {
+	pub fn new(api: &Api) -> Result<EntityWorld> {
 		Ok(EntityWorld  {
-			storage: EntityStorage::new(carrier),
+			storage: EntityStorage::new(api),
 			velocity: VelocitySystem,
 			gravity: GravitySystem,
 			collision: CollisionSystem,
@@ -105,10 +105,10 @@ impl EntityWorld {
 		})
 	}
 
-	pub fn tick(&mut self, chunks: &ChunkStorage, debug: &mut impl DebugRendererImpl) {
+	pub fn tick(&mut self, api: &Api, chunks: &ChunkStorage, debug: &mut impl DebugRendererImpl) {
 		self.humanoid.tick(&mut self.storage);
 		self.gravity.tick(&mut self.storage);
-		self.collision.tick(&mut self.storage, chunks, debug);
+		self.collision.tick(api, &mut self.storage, chunks, debug);
 		self.velocity.tick(&mut self.storage, debug);
 	}
 }

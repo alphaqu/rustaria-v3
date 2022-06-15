@@ -10,6 +10,7 @@ pub mod builder;
 pub mod debug;
 pub mod world;
 mod neighbor;
+mod chunk;
 
 #[repr(C)]
 #[derive(Copy, Clone)]

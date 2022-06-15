@@ -1,6 +1,6 @@
 use crate::api::id::Id;
 use crate::Chunk;
-use crate::chunk::tile::TilePrototype;
+use crate::chunk::entry::{ChunkEntryPrototype, ChunkLayerPrototype};
 use crate::player::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
 use crate::ty::chunk_pos::ChunkPos;
 use crate::ty::world_pos::WorldPos;
@@ -25,7 +25,7 @@ macro_rules! packet {
 
 pub enum ServerBoundPacket {
     RequestChunk(ChunkPos),
-    SetTile(WorldPos, Id<TilePrototype>),
+    SetChunkEntry(WorldPos, Id<ChunkLayerPrototype>, Id<ChunkEntryPrototype>),
     Player(ServerBoundPlayerPacket),
 }
 

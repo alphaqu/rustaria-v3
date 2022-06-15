@@ -2,43 +2,46 @@
 
 extern crate core;
 
-use euclid::{rect, vec2, Vector2D};
+use euclid::Vector2D;
 use eyre::Result;
 use glfw::{Key, WindowEvent};
 use glium::Surface;
 use mlua::Lua;
-use tracing::{info, Level};
+use rustaria::api::{Api, Resources};
+use tracing::info;
+use tracing_error::ErrorLayer;
+use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format;
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use rustaria::api::{Resources, Carrier, CarrierAccess, Api};
 
 use crate::frontend::Frontend;
-use world::player::PlayerSystem;
 use crate::render::debug::DebugRenderer;
 use crate::render::Camera;
 use crate::world::ClientWorld;
 use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::Registry;
 use rustaria::chunk::storage::ChunkStorage;
-use rustaria::chunk::tile::{ConnectionType, TilePrototype};
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria::debug::DebugKind;
-use rustaria::entity::component::{
-    CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent,
-};
-use rustaria::entity::prototype::EntityPrototype;
+use world::player::PlayerSystem;
 
 mod frontend;
 mod render;
 mod world;
 
 fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(Level::TRACE)
+    let fmt_layer = fmt::layer()
+        //.with_max_level(Level::TRACE)
+        .with_span_events(FmtSpan::ACTIVE)
         .event_format(format().compact())
-        .without_time()
-        .finish()
+        .without_time();
+    tracing_subscriber::registry()
+        .with(ErrorLayer::default())
+        .with(fmt_layer)
         .init();
+
     color_eyre::install()?;
     let mut runtime = Client::new()?;
     runtime.reload();
@@ -48,8 +51,6 @@ fn main() -> Result<()> {
 
 pub struct Client {
     api: Api,
-    resources: Resources,
-    carrier: Carrier,
     camera: Camera,
     debug: DebugRenderer,
     frontend: Frontend,
@@ -66,14 +67,7 @@ impl Client {
         debug.enable(DebugKind::ChunkBorders);
 
         Ok(Client {
-            api: Api {
-                lua: Lua::new(),
-            },
-            resources: Resources {},
-            carrier: Carrier {
-                tile: Registry::new(vec![]),
-                entity: Registry::new(vec![]),
-            },
+            api: Api::new(),
             camera: Camera {
                 pos: Vector2D::zero(),
                 zoom: 10.0,
@@ -108,7 +102,7 @@ impl Client {
 
     pub fn tick(&mut self) -> Result<()> {
         if let Some(world) = &mut self.world {
-            world.tick(&self.carrier, &mut self.debug)?
+            world.tick(&self.api, &mut self.debug)?
         }
         self.debug.finish()?;
         Ok(())
@@ -133,49 +127,72 @@ impl Client {
     }
 
     pub fn join_world(&self) -> Result<ClientWorld> {
-        let dirt = self
-            .carrier
-            .tile
-            .identifier_to_id(&Identifier::new("dirt"))
-            .expect("where dirt");
-
-        let air = self
-            .carrier
-            .tile
-            .identifier_to_id(&Identifier::new("air"))
-            .expect("where air");
-
-        let air = self.carrier.create(air);
-        let dirt = self.carrier.create(dirt);
         let mut out = Vec::new();
         for y in 0..9 {
             for x in 0..9 {
-                if x == 0 || (y > 0 && x != 2)|| x > 3 {
-                    out.push(Chunk {
-                        tile: ChunkLayer::new_copy(air),
-                    });
-                } else {
-                    out.push(Chunk {
-                        tile: ChunkLayer::new_copy(dirt),
-                    });
-                }
+                out.push(Chunk {
+                    layers: self.api.carrier.chunk_layers.map(|id, prototype| {
+                        let dirt = prototype.registry.create(
+                            prototype
+                                .registry
+                                .identifier_to_id(&Identifier::new("dirt"))
+                                .expect("where dirt"),
+                        );
+                        let air = prototype.registry.create(
+                            prototype
+                                .registry
+                                .identifier_to_id(&Identifier::new("air"))
+                                .expect("where air"),
+                        );
+
+                        if x == 2 && y == 1 {
+                            let a = air;
+                            let d = dirt;
+
+                            ChunkLayer {
+                                data: [
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, d, d, d, a, d, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, d, d, d, a, d, a, a, a, a, a, a, a, a, a, a],
+                                    [a, d, d, d, a, d, a, a, a, a, a, a, a, a, a, a],
+                                    [a, d, d, d, a, d, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                    [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
+                                ],
+                            }
+                        } else {
+                            if x == 0 || (y > 0 && x != 2) || x > 3 {
+                                ChunkLayer::new_copy(air)
+                            } else {
+                                ChunkLayer::new_copy(dirt)
+                            }
+                        }
+                    }),
+                });
             }
         }
 
         ClientWorld::new_integrated(
             &self.frontend,
-            &self.resources,
-            &self.carrier,
+            &self.api,
             ChunkStorage::new(9, 9, out).unwrap(),
         )
     }
 
     pub fn reload(&mut self) {
         info!("reloading");
-        self.carrier = self.api.reload(&self.resources);
+        self.api.reload();
 
-
-       //  self.carrier = Registries {
+        //  self.carrier = Registries {
         //             tile: Registry::new(vec![
         //                 (
         //                     Identifier::new("dirt"),

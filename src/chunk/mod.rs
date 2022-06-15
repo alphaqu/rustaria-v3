@@ -1,17 +1,21 @@
 use std::ops::{Index, IndexMut};
 
-use tile::Tile;
+
+use entry::ChunkEntry;
+use crate::api::registry::MappedRegistry;
+use crate::chunk::entry::ChunkLayerPrototype;
 
 use crate::ty::chunk_entry_pos::ChunkEntryPos;
 
-pub mod tile;
+
+pub mod entry;
 pub mod storage;
 
 pub const CHUNK_SIZE: usize = 16;
 
 #[derive(Clone)]
 pub struct Chunk {
-	pub tile: ChunkLayer<Tile>,
+	pub layers: MappedRegistry<ChunkLayerPrototype, ChunkLayer<ChunkEntry>>,
 }
 
 // Layer
@@ -37,11 +41,13 @@ impl<T: Clone> ChunkLayer<T>  {
 		}
 	}
 
-	pub fn map<O: Clone + Copy>(&self, default: O, mut func: impl FnMut(&T) -> O) -> ChunkLayer<O> {
+	pub fn map<O: Clone + Copy>(&self, default: O, mut func: impl FnMut(&T) -> Option<O>) -> ChunkLayer<O> {
 		let mut out = ChunkLayer::new_copy(default);
 		for y in 0..CHUNK_SIZE {
 			for x in 0..CHUNK_SIZE {
-				out.data[y][x] = func(&self.data[y][x]);
+				if let Some(value) = func(&self.data[y][x]) {
+					out.data[y][x] = value;
+				}
 			}
 		}
 
@@ -67,4 +73,13 @@ impl<T: Clone> IndexMut<ChunkEntryPos> for ChunkLayer<T> {
 	fn index_mut(&mut self, index: ChunkEntryPos) -> &mut Self::Output {
 		&mut self.data[index.y() as usize][index.x() as usize]
 	}
+}
+
+
+#[derive(Clone, Copy, Eq, PartialEq, serde::Deserialize)]
+pub enum ConnectionType {
+	// air
+	Isolated,
+	// tiles
+	Connected,
 }

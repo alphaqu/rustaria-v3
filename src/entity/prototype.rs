@@ -4,7 +4,7 @@ use mlua::{FromLua, Lua, LuaSerdeExt, Value};
 
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
-use crate::api::prototype::Prototype;
+use crate::api::prototype::{FactoryPrototype, Prototype};
 use crate::api::util;
 use crate::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent, PrototypeComponent};
 use crate::ty::WS;
@@ -21,8 +21,10 @@ pub struct EntityPrototype {
 }
 
 impl Prototype for EntityPrototype {
-    type Item = EntityBuilder;
 
+}
+impl FactoryPrototype for EntityPrototype {
+    type Item = EntityBuilder;
     fn create(&self, id: Id<Self>) -> Self::Item {
         let mut builder = EntityBuilder::new();
         builder.add(self.position.clone());

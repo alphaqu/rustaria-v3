@@ -105,12 +105,35 @@ impl<V> DirMap<V> {
         self.0
     }
 
+    pub fn get_ref_inner(&self) -> &[V; 4] {
+        &self.0
+    }
+
+    pub fn map<O: Default>(&self, mut func: impl FnMut(Direction, &V) -> O) -> DirMap<O> {
+        let mut out = DirMap([O::default(), O::default(), O::default(), O::default()]);
+        for dir in Direction::values() {
+            out[dir] = func(dir, &self[dir]);
+        }
+
+        out
+    }
+
     fn idx(dir: Direction) -> usize {
         match dir {
             Up => 0,
             Left => 1,
             Down => 2,
             Right => 3,
+        }
+    }
+
+    fn get_dir(dir: usize) -> Direction {
+        match dir {
+            0 => Up,
+            1 => Left,
+            2 => Down,
+            3 => Right,
+            _ => panic!("wtf")
         }
     }
 }

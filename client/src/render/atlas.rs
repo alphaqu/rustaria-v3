@@ -9,7 +9,7 @@ use rectangle_pack::{
 };
 use tracing::{error, trace, warn};
 
-use rustaria::api::{Resources, Carrier};
+use rustaria::api::{Resources, Api};
 use rustaria::api::identifier::Identifier;
 
 use crate::Frontend;
@@ -29,17 +29,16 @@ impl Atlas {
     }
 
     pub fn new(
-        frontend: &Frontend,
-        resources: &Resources,
-        carrier: &Carrier,
-        image_locations: &[Identifier],
+	    frontend: &Frontend,
+	    api: &Api,
+	    image_locations: &[Identifier],
     ) -> Result<Atlas> {
         let mut images = HashMap::new();
         images.insert(Identifier::new("missing"), image::load_from_memory(include_bytes!("./builtin/missing.png"))?);
 
         // Load all images
         for location in image_locations {
-            if let Ok(image) = resources.get_asset(location) {
+            if let Ok(image) = api.resources.get_asset(location) {
                 match image::load_from_memory(&image) {
                     Ok(image) => {
                         images.insert(location.clone(), image);

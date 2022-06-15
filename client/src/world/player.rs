@@ -8,15 +8,15 @@ use tracing::debug;
 
 use rustaria::api::id::Id;
 use rustaria::api::identifier::Identifier;
-use rustaria::api::{Carrier, CarrierAccess};
-use rustaria::chunk::Chunk;
+use rustaria::api::{Api};
+use rustaria::api::prototype::FactoryPrototype;
 use rustaria::chunk::storage::ChunkStorage;
-use rustaria::chunk::tile::TilePrototype;
+use rustaria::chunk::entry::ChunkEntryPrototype;
 use rustaria::debug::DummyRenderer;
 use rustaria::entity::component::{HumanoidComponent, PositionComponent};
 use rustaria::entity::prototype::EntityPrototype;
 use rustaria::entity::EntityWorld;
-use rustaria::network::{ClientNetwork, ServerNetwork};
+use rustaria::network::{ClientNetwork};
 use rustaria::network::packet::ServerBoundPacket;
 use rustaria::player::{ClientBoundPlayerPacket, PlayerCommand, ServerBoundPlayerPacket};
 use rustaria::ty::world_pos::WorldPos;
@@ -49,8 +49,6 @@ pub(crate) struct PlayerSystem {
     tick: u32,
     player_entity: Id<EntityPrototype>,
     presses: Vec<Press>,
-
-    air_tile: Id<TilePrototype>,
 }
 
 pub enum Press {
@@ -58,11 +56,11 @@ pub enum Press {
 }
 
 impl PlayerSystem {
-    pub fn new(carrier: &Carrier) -> Result<Self> {
+    pub fn new(api: &Api) -> Result<Self> {
         Ok(Self {
             server_player: None,
-            base_server_world: EntityWorld::new(carrier)?,
-            prediction_world: EntityWorld::new(carrier)?,
+            base_server_world: EntityWorld::new(api)?,
+            prediction_world: EntityWorld::new(api)?,
             send_command: PlayerCommand::default(),
             w: false,
             a: false,
@@ -75,12 +73,11 @@ impl PlayerSystem {
             speed: PlayerCommand::default(),
             unprocessed_events: Default::default(),
             tick: 0,
-            player_entity: carrier
+            player_entity: api.carrier
                 .entity
                 .identifier_to_id(&Identifier::new("player"))
                 .wrap_err("Player where")?,
             presses: vec![],
-            air_tile: carrier.tile.identifier_to_id(&Identifier::new("air")).unwrap()
         })
     }
 
@@ -136,12 +133,12 @@ impl PlayerSystem {
 
     pub fn tick(
         &mut self,
-        carrier: &Carrier,
+        api: &Api,
         network: &mut ClientNetwork,
         entity_world: &mut EntityWorld,
         chunks: &mut ChunkStorage,
     ) -> Result<()> {
-        self.prediction_world.tick(chunks, &mut DummyRenderer);
+        self.prediction_world.tick(api, chunks, &mut DummyRenderer);
         if let Some(entity) = self.check(entity_world) {
             self.send_command.dir = self.speed.dir;
             self.send_command.jumping = self.jump;
@@ -177,10 +174,17 @@ impl PlayerSystem {
                     match press {
                         Press::Use(x, y) => {
                             if let Ok(pos) = WorldPos::try_from(vec2::<_, WS>(x, y) + pos) {
-                               if let Some(chunk) =  chunks.get_mut(pos.chunk) {
-                                   chunk.tile[pos.entry] = carrier.create(self.air_tile);
-                               }
-                                network.send(ServerBoundPacket::SetTile(pos, self.air_tile))?;
+
+                                if let Some(chunk) =  chunks.get_mut(pos.chunk) {
+                                    for (id, layer) in chunk.layers.iter_mut() {
+                                        let prototype = api.carrier.chunk_layers.get(id);
+                                        let entry_id = prototype.registry.identifier_to_id(&Identifier::new("air")).expect("where my air");
+
+                                        layer[pos.entry] = prototype.registry.get(entry_id).create(entry_id);
+                                        network.send(ServerBoundPacket::SetChunkEntry(pos, id, entry_id))?;
+                                    }
+                                }
+
                             }
                         }
                     }
@@ -193,10 +197,11 @@ impl PlayerSystem {
     }
 
     pub fn packet(
-        &mut self,
-        packet: ClientBoundPlayerPacket,
-        entity_world: &mut EntityWorld,
-        chunks: &ChunkStorage,
+	    &mut self,
+	    carrier: &Api,
+	    packet: ClientBoundPlayerPacket,
+	    entity_world: &mut EntityWorld,
+	    chunks: &ChunkStorage,
     ) -> Result<()> {
         match packet {
             ClientBoundPlayerPacket::RespondPos(tick, pos) => {
@@ -224,7 +229,7 @@ impl PlayerSystem {
                             entity.dir = speed.dir;
                             entity.jumping = speed.jumping;
                         }
-                        self.base_server_world.tick(chunks, &mut DummyRenderer);
+                        self.base_server_world.tick(carrier, chunks, &mut DummyRenderer);
 
                         // If we reach the tick that we currently received,
                         // stop as the next events are the ones that the server has not yet seen.
@@ -234,7 +239,7 @@ impl PlayerSystem {
                     }
 
                     // Recompile our prediction
-                    self.compile_prediction(chunks);
+                    self.compile_prediction(carrier, chunks);
                 }
             }
             ClientBoundPlayerPacket::Joined(entity) => {
@@ -307,7 +312,7 @@ impl PlayerSystem {
 
     // When a client receives a packet, rebase the base_server_entity and
     // then apply the events not yet to be responded by the server.
-    fn compile_prediction(&mut self, chunks: &ChunkStorage) -> Option<()> {
+    fn compile_prediction(&mut self, carrier: &Api, chunks: &ChunkStorage) -> Option<()> {
         let entity = self.server_player?;
 
         // Put prediction on the server value
@@ -327,7 +332,7 @@ impl PlayerSystem {
                 prediction.dir = speed.dir;
                 prediction.jumping = speed.jumping;
             }
-            self.prediction_world.tick(chunks, &mut DummyRenderer);
+            self.prediction_world.tick(carrier, chunks, &mut DummyRenderer);
         }
 
         let mut prediction = self

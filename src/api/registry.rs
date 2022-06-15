@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::iter::Enumerate;
 use std::marker::PhantomData;
+use std::slice::{Iter, IterMut};
 use tracing::{debug, trace};
 
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
-use crate::api::prototype::Prototype;
+use crate::api::prototype::{FactoryPrototype, Prototype};
 
 pub struct Registry<P: Prototype> {
     lookup: Vec<P>,
@@ -44,11 +46,6 @@ impl<P: Prototype> Registry<P> {
         &self.lookup[id.index()]
     }
 
-    /// Creates an item using this prototype which is acquired from the id.
-    pub fn create(&self, id: Id<P>) -> P::Item {
-        self.get(id).create(id)
-    }
-
     /// Converts an identifier to the id.
     pub fn identifier_to_id(&self, ident: &Identifier) -> Option<Id<P>> {
         self.identifier_lookup.get(ident).copied()
@@ -64,10 +61,19 @@ impl<P: Prototype> Registry<P> {
     }
 }
 
+impl<P: Prototype + FactoryPrototype> Registry<P> {
+    /// Creates an item using this prototype which is acquired from the id.
+    pub fn create(&self, id: Id<P>) -> P::Item {
+        self.get(id).create(id)
+    }
+}
+
 pub struct MappedRegistry<P: Prototype, V> {
     lookup: Vec<V>,
     prototype: PhantomData<P>
 }
+
+//pub type RegistryIter<V> = std::iter::Map<std::iter::Enumerate<std::slice::Iter<'_, V>>;
 
 impl<P: Prototype, V> MappedRegistry<P, V> {
     pub fn get(&self, id: Id<P>) -> &V {
@@ -76,5 +82,60 @@ impl<P: Prototype, V> MappedRegistry<P, V> {
 
     pub fn get_mut(&mut self, id: Id<P>) -> &mut V {
         &mut self.lookup[id.index()]
+    }
+
+    pub fn iter(&self) -> RegistryIter<'_, P, V>{
+        RegistryIter {
+            values: self.lookup.iter().enumerate(),
+            _p: Default::default()
+        }
+    }
+
+
+    pub fn iter_mut(&mut self) -> RegistryIterMut<'_, P, V>{
+        RegistryIterMut {
+            values: self.lookup.iter_mut().enumerate(),
+            _p: Default::default()
+        }
+    }
+}
+
+pub struct RegistryIter<'a, P: Prototype, V> {
+    values: Enumerate<Iter<'a, V>>,
+    _p: PhantomData<P>
+}
+pub struct RegistryIterMut<'a, P: Prototype, V> {
+    values: Enumerate<IterMut<'a, V>>,
+    _p: PhantomData<P>
+}
+
+
+impl<'a, P: Prototype, V: 'a> Iterator for RegistryIter<'a, P, V> {
+    type Item = (Id<P>, &'a V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.values.next().map(|(id, value)|  unsafe{
+            (Id::new(id as u32), value)
+        })
+    }
+}
+impl<'a, P: Prototype, V: 'a> Iterator for RegistryIterMut<'a, P, V> {
+    type Item = (Id<P>, &'a mut V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.values.next().map(|(id, value)|  unsafe{
+            (Id::new(id as u32), value)
+        })
+    }
+}
+
+
+
+impl<P: Prototype, V: Clone> Clone for MappedRegistry<P, V> {
+    fn clone(&self) -> Self {
+        MappedRegistry {
+            lookup: self.lookup.clone(),
+            prototype: Default::default()
+        }
     }
 }

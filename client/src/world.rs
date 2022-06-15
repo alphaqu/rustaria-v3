@@ -1,4 +1,4 @@
-use rustaria::api::{Carrier, Resources};
+use rustaria::api::{Api, Resources};
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::entity::EntityWorld;
 use rustaria::network::{ClientNetwork, new_networking};
@@ -26,18 +26,18 @@ pub struct ClientWorld {
 }
 
 impl ClientWorld {
-	pub fn new_integrated(frontend: &Frontend, resources: &Resources, carrier: &Carrier, chunks: ChunkStorage) -> Result<ClientWorld> {
+	pub fn new_integrated(frontend: &Frontend, api: &Api, chunks: ChunkStorage) -> Result<ClientWorld> {
 		let (network, server_network) = new_networking();
 		// Send join packet
 		network.send(ServerBoundPlayerPacket::Join())?;
 
 		Ok(ClientWorld {
-			integrated: Some(Server::new(carrier, server_network, chunks.clone()).wrap_err("Failed to start server")?),
+			integrated: Some(Server::new(api, server_network, chunks.clone()).wrap_err("Failed to start server")?),
 			network,
-			player: PlayerSystem::new(carrier)?,
-			entity: EntityWorld::new(carrier)?,
+			player: PlayerSystem::new(api)?,
+			entity: EntityWorld::new(api)?,
 			chunks,
-			renderer: WorldRenderer::new(frontend, resources, carrier)?
+			renderer: WorldRenderer::new(frontend, api)?
 		})
 	}
 
@@ -49,9 +49,9 @@ impl ClientWorld {
 		Some(self.player.get_camera())
 	}
 
-	pub fn tick(&mut self, carrier: &Carrier, debug: &mut DebugRenderer) -> Result<()> {
+	pub fn tick(&mut self, api: &Api, debug: &mut DebugRenderer) -> Result<()> {
 		if let Some(server) = &mut self.integrated {
-			server.tick(carrier)?;
+			server.tick(api)?;
 		}
 		for packet in self.network.poll() {
 			match packet {
@@ -60,13 +60,13 @@ impl ClientWorld {
 					self.renderer.dirty_world();
 				}
 				ClientBoundPacket::Player(packet) => {
-					self.player.packet(packet, &mut self.entity, &self.chunks)?;
+					self.player.packet(api, packet, &mut self.entity, &self.chunks)?;
 				}
 			}
 		}
 		self.renderer.dirty_world();
-		self.player.tick(carrier, &mut self.network, &mut self.entity, &mut self.chunks)?;
-		self.entity.tick(&self.chunks, debug);
+		self.player.tick(api, &mut self.network, &mut self.entity, &mut self.chunks)?;
+		self.entity.tick(api, &self.chunks, debug);
 		self.renderer.tick(&self.entity.storage, &self.player, &self.chunks, debug)?;
 		Ok(())
 	}

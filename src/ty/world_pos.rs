@@ -15,8 +15,8 @@ pub struct WorldPos {
 }
 
 impl WorldPos {
-    pub fn new(chunk: ChunkPos, sub: ChunkEntryPos) -> WorldPos {
-        WorldPos { chunk, entry: sub }
+    pub fn new(chunk: ChunkPos, entry: ChunkEntryPos) -> WorldPos {
+        WorldPos { chunk, entry }
     }
 
     pub fn x(&self) -> i64 {

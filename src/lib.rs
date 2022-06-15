@@ -1,13 +1,11 @@
 #![allow(clippy::new_without_default)]
 
-use std::collections::HashMap;
-
 use eyre::{Context, Result};
 use tracing::info;
 
 use ty::chunk_pos::ChunkPos;
+use crate::api::Api;
 
-use crate::api::{Carrier, CarrierAccess};
 use crate::chunk::storage::ChunkStorage;
 use crate::chunk::Chunk;
 use crate::debug::DummyRenderer;
@@ -35,17 +33,17 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(carrier: &Carrier, network: ServerNetwork, storage: ChunkStorage) -> Result<Server> {
+    pub fn new(api: &Api, network: ServerNetwork, storage: ChunkStorage) -> Result<Server> {
         info!("Launching integrated server.");
         Ok(Server {
             chunks: storage,
             network,
-            entity: EntityWorld::new(carrier)?,
-            player: PlayerSystem::new(carrier)?,
+            entity: EntityWorld::new(api)?,
+            player: PlayerSystem::new(api)?,
         })
     }
 
-    pub fn tick(&mut self, carrier: &Carrier) -> Result<()> {
+    pub fn tick(&mut self, api: &Api) -> Result<()> {
         for (token, packet) in self.network.poll() {
             match packet {
                 ServerBoundPacket::RequestChunk(pos) => {
@@ -54,9 +52,9 @@ impl Server {
                             .send(token, ClientBoundPacket::Chunk(pos, chunk.clone()))?;
                     }
                 }
-                ServerBoundPacket::SetTile(pos, id) => {
+                ServerBoundPacket::SetChunkEntry(pos, layer, block) => {
                     if let Some(chunk) = self.chunks.get_mut(pos.chunk) {
-                        chunk.tile[pos.entry] = carrier.create(id);
+                        chunk.layers.get_mut(layer)[pos.entry] = api.carrier.chunk_layers.get(layer).registry.create(block);
                     }
                 }
                 ServerBoundPacket::Player(packet) => {
@@ -65,7 +63,7 @@ impl Server {
             }
         }
 
-        self.entity.tick(&self.chunks, &mut DummyRenderer);
+        self.entity.tick(api, &self.chunks, &mut DummyRenderer);
         self.player
             .tick(&mut self.network, &self.entity)
             .wrap_err("Ticking player system.")?;

@@ -2,12 +2,13 @@ use mlua::{Lua, Table};
 use std::fs::read;
 use std::io;
 
-use crate::api::id::Id;
 use crate::api::identifier::Identifier;
-use crate::api::prototype::Prototype;
+use crate::api::prototype::{Prototype};
 use crate::api::registry::Registry;
-use crate::chunk::tile::TilePrototype;
+use crate::chunk::entry::{ChunkLayerPrototype};
 use crate::entity::prototype::EntityPrototype;
+use crate::multi_deref_fields;
+use crate::ty::MultiDeref;
 
 pub mod id;
 pub mod identifier;
@@ -17,22 +18,35 @@ pub mod util;
 
 pub struct Api {
     pub lua: Lua,
+    pub carrier: Carrier,
+    pub resources: Resources,
 }
 
 impl Api {
-    pub fn reload(&self, resources: &Resources) -> Carrier {
-        let result = resources
+    pub fn new() -> Api {
+        Api {
+            lua: Lua::new(),
+            carrier: Carrier {
+                chunk_layers: Registry::new(vec![]),
+                entity: Registry::new(vec![])
+            },
+            resources: Resources {}
+        }
+    }
+
+    pub fn reload(&mut self) {
+        let result = self.resources
             .get_src(&Identifier::new("init.lua"))
             .expect("init where");
         self.lua.load(&result).exec().unwrap();
 
-        Carrier {
-            tile: self.extract("tile"),
+        self.carrier = Carrier {
+            chunk_layers: self.extract("chunk_layers"),
             entity: self.extract("entity"),
-        }
+        };
     }
 
-    pub fn extract<P: Prototype>(&self, name: &str) -> Registry<P> {
+    fn extract<P: Prototype>(&self, name: &str) -> Registry<P> {
         Registry::new(
             self.lua
                 .globals()
@@ -69,27 +83,12 @@ impl Resources {
 }
 
 pub struct Carrier {
-    pub tile: Registry<TilePrototype>,
+    pub chunk_layers: Registry<ChunkLayerPrototype>,
     pub entity: Registry<EntityPrototype>,
 }
 
-pub trait CarrierAccess<P: Prototype> {
-    fn get(&self, id: Id<P>) -> &P;
-    fn create(&self, id: Id<P>) -> P::Item {
-        self.get(id).create(id)
-    }
-}
 
-macro_rules! access {
-    ($($FIELD:ident => $PROTOTYPE:ty),*) => {
-	    $(
-	    impl CarrierAccess<$PROTOTYPE> for Carrier {
-			fn get(&self, id: Id<$PROTOTYPE>) -> &$PROTOTYPE {
-				self.$FIELD.get(id)
-			}
-		}
-	    )*
-    };
-}
-
-access!(tile => TilePrototype, entity => EntityPrototype);
+multi_deref_fields!(Carrier {
+    chunk_layers: Registry<ChunkLayerPrototype>,
+    entity: Registry<EntityPrototype>
+});

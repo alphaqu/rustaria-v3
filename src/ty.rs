@@ -13,6 +13,27 @@ pub enum Error {
     OutOfBounds,
 }
 
+pub trait MultiDeref<T> {
+    fn get_child(&self) -> &T;
+    fn get_mut_child(&mut self) -> &mut T;
+}
+
+#[macro_export]
+macro_rules! multi_deref_fields {
+    ($FOR:ty {$($IDENT:ident:$TY:ty),*}) => {
+	    $(
+	    impl MultiDeref<$TY> for $FOR {
+			fn get_child(&self) -> &$TY {
+				&self.$IDENT
+			}
+            fn get_mut_child(&mut self) -> &mut $TY {
+				&mut self.$IDENT
+			}
+		}
+	    )*
+    };
+}
+
 pub trait Offset<D>: Sized {
     fn wrapping_offset(self, displacement: D) -> Self;
     fn checked_offset(self, displacement: D) -> Option<Self>;

@@ -7,7 +7,7 @@ use hecs::{Entity, EntityRef};
 use tracing::{debug, info, trace, warn};
 
 use crate::{EntityWorld, packet, ServerNetwork};
-use crate::api::Carrier;
+use crate::api::Api;
 use crate::api::id::Id;
 use crate::api::identifier::Identifier;
 use crate::entity::component::{HumanoidComponent, PositionComponent};
@@ -41,13 +41,13 @@ pub(crate) struct PlayerSystem {
 }
 
 impl PlayerSystem {
-    pub fn new(carrier: &Carrier) -> Result<PlayerSystem> {
+    pub fn new(api: &Api) -> Result<PlayerSystem> {
         info!("Initializing");
         Ok(PlayerSystem {
             players: Default::default(),
             response_requests: vec![],
             joined: Default::default(),
-            player_entity: carrier
+            player_entity: api.carrier
                 .entity
                 .identifier_to_id(&Identifier::new("player"))
                 .wrap_err("Could not find Player entity")?,

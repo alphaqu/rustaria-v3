@@ -1,5 +1,5 @@
 use euclid::{point2, Rect, size2};
-use rustaria::chunk::tile::ConnectionType;
+use rustaria::chunk::ConnectionType;
 
 use rustaria::ty::world_pos::WorldPos;
 
