@@ -20,9 +20,11 @@ crossbeam = "0.8.1"
 parking_lot = "0.12.0"
 
 zip = "0.6.2"
+apollo = { path = "./libs/apollo" }
 mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
 
 [workspace]
 members = [
-    "client"
+    "client",
+    "libs/apollo"
 ]

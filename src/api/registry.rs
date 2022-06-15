@@ -1,11 +1,11 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::iter::Enumerate;
 use std::marker::PhantomData;
 use std::slice::{Iter, IterMut};
-use tracing::{debug, trace};
 
-use crate::api::id::Id;
-use crate::api::identifier::Identifier;
+use crate::ty::id::Id;
+use crate::ty::identifier::Identifier;
 use crate::api::prototype::{FactoryPrototype, Prototype};
 
 pub struct Registry<P: Prototype> {
@@ -14,13 +14,27 @@ pub struct Registry<P: Prototype> {
 }
 
 impl<P: Prototype> Registry<P> {
-    pub fn new(mut values: Vec<(Identifier, P)>) -> Registry<P> {
-        values.sort_by(|(v0, _), (v1, _)| v0.cmp(v1));
+    pub fn empty() -> Registry<P> {
+        Registry {
+            lookup: Vec::new(),
+            identifier_lookup: HashMap::new()
+        }
+    }
+    
+    pub fn new(mut values: HashMap<Identifier, (f32, P)>) -> Registry<P> {
+        let mut values: Vec<((Identifier, f32), P)> = values.into_iter().map(|(identifier, (priority, prototype))| ((identifier, priority), prototype)).collect();
+
+        values.sort_by(|((id0, priority0), _), ((id1, priority1), _)| {
+            let ordering = priority0.total_cmp(priority1);
+            if ordering == Ordering::Equal {
+                return id0.cmp(id1);
+            }
+            ordering
+        });
 
         let mut lookup = Vec::with_capacity(values.len());
         let mut tag_to_id = HashMap::new();
-        for (ident, prototype) in values {
-            debug!("Added {ident}");
+        for ((ident, _), prototype) in values {
             unsafe {
                 tag_to_id.insert(
                     ident,
@@ -35,7 +49,6 @@ impl<P: Prototype> Registry<P> {
             identifier_lookup: tag_to_id,
         }
     }
-
 
     pub fn entries(&self) -> &[P] {
         &self.lookup

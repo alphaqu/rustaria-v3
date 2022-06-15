@@ -54,7 +54,7 @@ impl Server {
                 }
                 ServerBoundPacket::SetBlock(pos, layer, block) => {
                     if let Some(chunk) = self.chunks.get_mut(pos.chunk) {
-                        chunk.layers.get_mut(layer)[pos.entry] = api.carrier.block_layers.get(layer).registry.create(block);
+                        chunk.layers.get_mut(layer)[pos.entry] = api.carrier.block_layer.get(layer).registry.create(block);
                     }
                 }
                 ServerBoundPacket::Player(packet) => {

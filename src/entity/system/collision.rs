@@ -59,7 +59,7 @@ impl CollisionSystem {
                     if let Ok(world_pos) = BlockPos::try_from(pos) {
                         if let Some(chunk) = chunks.get(world_pos.chunk) {
                             for (id, layer) in chunk.layers.iter() {
-                                let prototype = api.carrier.block_layers.get(id);
+                                let prototype = api.carrier.block_layer.get(id);
                                 if !prototype.collision || !layer[world_pos.entry].collision {
                                     // dont move.
                                     continue;

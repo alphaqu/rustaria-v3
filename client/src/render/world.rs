@@ -30,7 +30,7 @@ pub(crate) struct WorldRenderer {
 impl WorldRenderer {
     pub fn new(frontend: &Frontend, api: &Api) -> eyre::Result<Self> {
         let mut image_locations = Vec::new();
-        for layer in api.carrier.block_layers.entries() {
+        for layer in api.carrier.block_layer.entries() {
             for entry in layer.registry.entries() {
                 if let Some(image) = &entry.image {
                     image_locations.push(image.clone());

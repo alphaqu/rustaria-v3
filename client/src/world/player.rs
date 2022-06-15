@@ -6,8 +6,8 @@ use glfw::{Action, Key, MouseButton, WindowEvent};
 use hecs::Entity;
 use tracing::debug;
 
-use rustaria::api::id::Id;
-use rustaria::api::identifier::Identifier;
+use rustaria::ty::id::Id;
+use rustaria::ty::identifier::Identifier;
 use rustaria::api::{Api};
 use rustaria::api::prototype::FactoryPrototype;
 use rustaria::chunk::storage::ChunkStorage;
@@ -177,7 +177,7 @@ impl PlayerSystem {
 
                                 if let Some(chunk) =  chunks.get_mut(pos.chunk) {
                                     for (id, layer) in chunk.layers.iter_mut() {
-                                        let prototype = api.carrier.block_layers.get(id);
+                                        let prototype = api.carrier.block_layer.get(id);
                                         let entry_id = prototype.registry.identifier_to_id(&Identifier::new("air")).expect("where my air");
 
                                         layer[pos.entry] = prototype.registry.get(entry_id).create(entry_id);

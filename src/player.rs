@@ -8,8 +8,8 @@ use tracing::{debug, info, trace, warn};
 
 use crate::{EntityWorld, packet, ServerNetwork};
 use crate::api::Api;
-use crate::api::id::Id;
-use crate::api::identifier::Identifier;
+use crate::ty::id::Id;
+use crate::ty::identifier::Identifier;
 use crate::entity::component::{HumanoidComponent, PositionComponent};
 use crate::entity::prototype::EntityPrototype;
 use crate::network::Token;

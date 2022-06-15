@@ -1,6 +1,6 @@
 use euclid::{Rect, Vector2D};
 
-use crate::api::id::Id;
+use crate::ty::id::Id;
 use crate::entity::prototype::EntityPrototype;
 use crate::ty::direction::DirMap;
 use crate::ty::WS;

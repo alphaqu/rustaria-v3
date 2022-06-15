@@ -5,7 +5,7 @@ use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, Qu
 
 use crate::{Chunk, ChunkPos, ChunkStorage, iter_components};
 use crate::api::Api;
-use crate::api::id::Id;
+use crate::ty::id::Id;
 use crate::api::prototype::{FactoryPrototype, Prototype};
 use crate::api::registry::MappedRegistry;
 use crate::debug::DebugRendererImpl;

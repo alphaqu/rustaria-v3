@@ -40,7 +40,7 @@ impl ChunkRenderer {
             cached_meshes: Default::default(),
             layer_renderers: api
                 .carrier
-                .block_layers
+                .block_layer
                 .map(|_, prototype| BlockLayerRenderer::new(api, prototype, atlas)),
             chunks_dirty: true,
         })
@@ -193,11 +193,11 @@ impl BlockLayerRenderer {
         for value in SpriteConnectionKind::iter() {
             kind_uvs.push(KindDesc {
                 uv: api
-                    .lua
+                    .luna.lua
                     .from_value(prototype.get_uv.call(format!("{value:?}")).unwrap())
                     .unwrap(),
                 rect: api
-                    .lua
+                    .luna.lua
                     .from_value(prototype.get_rect.call(format!("{value:?}")).unwrap())
                     .unwrap(),
             });

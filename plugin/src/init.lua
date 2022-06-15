@@ -72,7 +72,8 @@ local wall_rect_pos_lookup = {
     ["CornerDownRight"] = { 0, -0.5 },
 };
 
-chunk_layers = {
+log.info("Hi there");
+reload.block_layer:register {
     ["tile"] = {
         collision = true,
         get_rect = function(kind)
@@ -102,7 +103,7 @@ chunk_layers = {
             }
         }
     },
-    ["awall"] = {
+    [{ name = "wall", priority = 0 }] = {
         get_rect = function(kind)
             local size =  wall_size_lookup[kind];
             local pos =  wall_rect_pos_lookup[kind];
@@ -137,7 +138,7 @@ chunk_layers = {
         }
     }
 }
-entity = {
+reload.entity:register {
     ["player"] = {
         position = { 24.0, 20.0 },
         velocity = {

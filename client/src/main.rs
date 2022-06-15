@@ -21,7 +21,7 @@ use crate::frontend::Frontend;
 use crate::render::debug::DebugRenderer;
 use crate::render::Camera;
 use crate::world::ClientWorld;
-use rustaria::api::identifier::Identifier;
+use rustaria::ty::identifier::Identifier;
 use rustaria::api::registry::Registry;
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::chunk::{Chunk, ChunkLayer};
@@ -44,7 +44,7 @@ fn main() -> Result<()> {
 
     color_eyre::install()?;
     let mut runtime = Client::new()?;
-    runtime.reload();
+    runtime.reload()?;
     runtime.run()?;
     Ok(())
 }
@@ -92,7 +92,7 @@ impl Client {
     pub fn tick_events(&mut self) -> Result<()> {
         for event in self.frontend.poll_events() {
             if let WindowEvent::Key(Key::O, _, _, _) = event {
-                self.reload();
+                self.reload()?;
                 self.world = Some(self.join_world()?);
             }
             if let Some(world) = &mut self.world {
@@ -132,7 +132,7 @@ impl Client {
         for y in 0..9 {
             for x in 0..9 {
                 out.push(Chunk {
-                    layers: self.api.carrier.block_layers.map(|id, prototype| {
+                    layers: self.api.carrier.block_layer.map(|id, prototype| {
                         let dirt = prototype.registry.create(
                             prototype
                                 .registry
@@ -189,8 +189,8 @@ impl Client {
         )
     }
 
-    pub fn reload(&mut self) {
+    pub fn reload(&mut self) -> Result<()>{
         info!("reloading");
-        self.api.reload();
+        self.api.reload()
     }
 }

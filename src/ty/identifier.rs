@@ -20,11 +20,18 @@ impl Identifier {
 
 impl FromLua for Identifier {
     fn from_lua(lua_value: Value, _: &Lua) -> mlua::Result<Self> {
-        let table = util::lua_string(lua_value)?;
-        Ok(Identifier {
-            namespace: "rustaria".to_string(),
-            path: table
-        })
+        let string = util::lua_string(lua_value)?;
+        if let Some((namespace, path)) = string.split_once(':') {
+            Ok(Identifier {
+                namespace: namespace.to_string(),
+                path: path.to_string()
+            })
+        } else {
+            Ok(Identifier {
+                namespace: "rustaria".to_string(),
+                path: string
+            })
+        }
     }
 }
 

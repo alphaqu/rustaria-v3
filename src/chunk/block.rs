@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use mlua::{FromLua, Function, Lua, LuaSerdeExt, Table, Value};
 use tracing::{info_span};
-use crate::api::id::Id;
-use crate::api::identifier::Identifier;
-use crate::api::prototype::{FactoryPrototype, KernelId, Prototype};
+use crate::api::luna::lib::registry_builder::RegistryBuilder;
+use crate::ty::id::Id;
+use crate::ty::identifier::Identifier;
+use crate::api::prototype::{FactoryPrototype, Prototype};
 use crate::api::registry::Registry;
 use crate::api::util::lua_table;
 use crate::chunk::ConnectionType;
@@ -11,12 +13,6 @@ use crate::chunk::ConnectionType;
 pub struct Block {
 	pub id: Id<BlockPrototype>,
 	pub collision: bool,
-}
-
-impl KernelId<BlockPrototype> for Block {
-	fn get_id(&self) -> Id<BlockPrototype> {
-		self.id
-	}
 }
 
 pub struct BlockPrototype {
@@ -57,18 +53,16 @@ pub struct BlockLayerPrototype {
 }
 
 impl FromLua for BlockLayerPrototype {
-	fn from_lua(value: Value, _: &Lua) -> mlua::Result<Self> {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
 		let _span = info_span!("FromLua ChunkLayerPrototype").entered();
 		let table = lua_table(value)?;
-		let entries: Table = table.get("entries")?;
 
-		let mut out = Vec::new();
-		for value in entries.pairs::<Identifier, BlockPrototype>() {
-			out.push(value?);
-		}
+
+		let mut builder = RegistryBuilder::new();
+		builder.register(lua,  table.get("entries")?)?;
 
 		Ok(BlockLayerPrototype {
-			registry: Registry::new(out),
+			registry: builder.build(),
 			get_uv: table.get("get_uv")?,
 			get_rect: table.get("get_rect")?,
 			collision: table.get("collision")?,

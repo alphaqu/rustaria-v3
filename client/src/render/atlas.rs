@@ -10,7 +10,7 @@ use rectangle_pack::{
 use tracing::{error, trace, warn};
 
 use rustaria::api::{Resources, Api};
-use rustaria::api::identifier::Identifier;
+use rustaria::ty::identifier::Identifier;
 
 use crate::Frontend;
 

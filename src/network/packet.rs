@@ -1,4 +1,4 @@
-use crate::api::id::Id;
+use crate::ty::id::Id;
 use crate::Chunk;
 use crate::chunk::block::{BlockPrototype, BlockLayerPrototype};
 use crate::player::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};

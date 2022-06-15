@@ -4,23 +4,25 @@ use std::io;
 use std::sync::Arc;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
-use crate::api::identifier::Identifier;
-use crate::api::prototype::{Prototype};
+use crate::ty::identifier::Identifier;
+use crate::api::prototype::Prototype;
 use crate::api::registry::Registry;
-use crate::chunk::block::{BlockLayerPrototype};
+use crate::chunk::block::BlockLayerPrototype;
 use crate::entity::prototype::EntityPrototype;
 use crate::multi_deref_fields;
 use crate::ty::MultiDeref;
 use eyre::Result;
+use crate::api::luna::glue::Glue;
+use crate::api::luna::lib::stargate::Stargate;
+use crate::api::luna::Luna;
 
-pub mod id;
-pub mod identifier;
 pub mod prototype;
 pub mod registry;
 pub mod util;
+pub mod luna;
 
 pub struct Api {
-    pub lua: Lua,
+    pub luna: Luna,
     pub carrier: Carrier,
     pub resources: Resources,
     pub thread_pool: Arc<ThreadPool>,
@@ -28,47 +30,39 @@ pub struct Api {
 
 impl Api {
     pub fn new() -> Result<Api> {
-       Ok( Api {
-           lua: Lua::new(),
+        let resources = Resources {};
+        Ok( Api {
+           luna: Luna::new(&resources)?,
            carrier: Carrier {
-               block_layers: Registry::new(vec![]),
-               entity: Registry::new(vec![])
+               block_layer: Registry::empty(),
+               entity: Registry::empty()
            },
-           resources: Resources {},
+           resources,
            thread_pool: Arc::new(ThreadPoolBuilder::new().build()?)
        })
     }
 
-    pub fn reload(&mut self) {
-        let result = self.resources
-            .get_src(&Identifier::new("init.lua"))
-            .expect("init where");
-        self.lua.load(&result).exec().unwrap();
+    pub fn reload(&mut self) -> Result<()> {
+        // Prepare for reload
+        let mut stargate = Stargate::new();
+        {
+            let glue = Glue::new(&mut stargate);
+            self.luna.lua.globals().set("reload", glue.clone())?;
 
-        self.carrier = Carrier {
-            block_layers: self.extract("chunk_layers"),
-            entity: self.extract("entity"),
-        };
-    }
+            // TODO plugins
+            // reload our mod
+            let location = Identifier::new("init.lua");
+            let data = self.resources.get_src(&location)?;
+            let chunk = self.luna.load(&location, &data)?;
+            chunk.exec()?;
+        }
 
-    fn extract<P: Prototype>(&self, name: &str) -> Registry<P> {
-        Registry::new(
-            self.lua
-                .globals()
-                .get::<_, Table>(name)
-                .unwrap()
-                .pairs::<Identifier, P>()
-                .map(|value| match value {
-                    Ok(ok) => ok,
-                    Err(error) => {
-                        panic!("{error}");
-                    }
-                })
-                .collect(),
-        )
+        self.carrier = stargate.build();
+        Ok(())
     }
 }
 
+#[derive(Clone)]
 pub struct Resources {}
 
 impl Resources {
@@ -88,12 +82,11 @@ impl Resources {
 }
 
 pub struct Carrier {
-    pub block_layers: Registry<BlockLayerPrototype>,
+    pub block_layer: Registry<BlockLayerPrototype>,
     pub entity: Registry<EntityPrototype>,
 }
 
-
 multi_deref_fields!(Carrier {
-    block_layers: Registry<BlockLayerPrototype>,
+    block_layer: Registry<BlockLayerPrototype>,
     entity: Registry<EntityPrototype>
 });
