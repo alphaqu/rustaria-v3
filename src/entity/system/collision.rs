@@ -10,6 +10,7 @@ use crate::ty::direction::DirMap;
 use crate::ty::WS;
 use crate::util::aabb;
 use crate::{draw_debug, Api, ChunkStorage};
+use crate::chunk::CHUNK_SIZE;
 
 pub struct CollisionSystem;
 
@@ -54,17 +55,31 @@ impl CollisionSystem {
             let mut collisions = Vec::new();
             for x in x1..x2 {
                 for y in y1..y2 {
-                    test_collision(
-                        api,
-                        vec2(x as f32, y as f32),
-                        physics.vel,
-                        old_rect,
-                        chunks,
-                        &mut collisions,
-                        debug,
-                    )
+                    let pos = vec2(x as f32, y as f32);
+                    if let Ok(world_pos) = BlockPos::try_from(pos) {
+                        if let Some(chunk) = chunks.get(world_pos.chunk) {
+                            for (id, layer) in chunk.layers.iter() {
+                                let prototype = api.carrier.block_layers.get(id);
+                                if !prototype.collision || !layer[world_pos.entry].collision {
+                                    // dont move.
+                                    continue;
+                                }
+                                let tile = Rect::new(pos.to_point(), Size2D::new(1.0, 1.0));
+                                test_collision(physics.vel, old_rect, tile, &mut collisions, debug);
+                            }
+                        }
+                    }
                 }
             }
+
+            // world border
+            let w = chunks.width() as f32 * CHUNK_SIZE as f32;
+            let h = chunks.height() as f32 * CHUNK_SIZE as f32;
+            test_collision(physics.vel, old_rect, rect(0.0, -1.0, w, 1.0), &mut collisions, debug);
+            test_collision(physics.vel, old_rect, rect(-1.0, 0.0, 1.0, h), &mut collisions, debug);
+            test_collision(physics.vel, old_rect, rect(w, 0.0, 1.0, h), &mut collisions, debug);
+            test_collision(physics.vel, old_rect, rect(0.0, h, w, 1.0), &mut collisions, debug);
+
 
             collisions.sort_by(|v0, v1| v0.1.total_cmp(&v1.1));
 
@@ -72,7 +87,7 @@ impl CollisionSystem {
                 if let Some(Some((d, contact))) =
                     aabb::resolve_dynamic_rect_vs_rect(physics.vel, old_rect, 1.0, pos)
                 {
-                    draw_debug!(debug, DebugCategory::EntityCollision, pos);
+                    draw_debug!(debug, DebugCategory::EntityCollision, pos, 0xc1c0c0, 1.0, 1.0);
                     physics.vel += d;
                     physics.accel += contact
                         .to_vec2()
@@ -85,31 +100,16 @@ impl CollisionSystem {
 }
 
 fn test_collision(
-    api: &Api,
-    pos: Vector2D<f32, WS>,
     vel: Vector2D<f32, WS>,
     collision_area: Rect<f32, WS>,
-    chunks: &ChunkStorage,
+    rect: Rect<f32, WS>,
     collisions: &mut Vec<(Rect<f32, WS>, f32)>,
     debug: &mut impl DebugRendererImpl,
 ) {
-    if let Ok(world_pos) = BlockPos::try_from(pos) {
-        if let Some(chunk) = chunks.get(world_pos.chunk) {
-            for (id, layer) in chunk.layers.iter() {
-                let prototype = api.carrier.block_layers.get(id);
-                if !prototype.collision || !layer[world_pos.entry].collision {
-                    // dont move.
-                    continue;
-                }
-                let tile = Rect::new(pos.to_point(), Size2D::new(1.0, 1.0));
-                if let Some((pos, contact_time)) =
-                    aabb::dynamic_rect_vs_rect(vel, collision_area, 1.0, tile)
-                        .map(|collision| (tile, collision.contact_time))
-                {
-                    draw_debug!(debug, DebugCategory::EntityCollision, pos, 0x939293);
-                    collisions.push((pos, contact_time));
-                }
-            }
-        }
+    if let Some((pos, contact_time)) = aabb::dynamic_rect_vs_rect(vel, collision_area, 1.0, rect)
+        .map(|collision| (rect, collision.contact_time))
+    {
+        draw_debug!(debug, DebugCategory::EntityCollision, rect, 0x939293);
+        collisions.push((pos, contact_time));
     }
 }

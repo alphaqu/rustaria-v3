@@ -25,6 +25,14 @@ impl ChunkStorage {
 		})
 	}
 
+	pub fn width(&self) -> u32 {
+		self.width
+	}
+
+	pub fn height(&self) -> u32 {
+		self.height
+	}
+
 	pub fn get(&self, pos: ChunkPos) -> Option<&Chunk> {
 		let idx = self.get_idx(pos)?;
 		Some(&self.chunks[idx])
