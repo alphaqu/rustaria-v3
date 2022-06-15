@@ -11,6 +11,7 @@ tracing = "0.1.35"
 
 serde = { version = "1.0.137", features = ["derive"]}
 euclid = { version = "0.22.7", features = ["serde"] }
+rayon = "1.5.3"
 num = "0.4"
 
 hecs = "0.7.6"

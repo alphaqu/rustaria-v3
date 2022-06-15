@@ -90,7 +90,7 @@ impl PlayerSystem {
                 self.cursor_x = x as f32;
                 self.cursor_y = y as f32;
             }
-            WindowEvent::MouseButton(button, _, _) => {
+            WindowEvent::MouseButton(button, Action::Press, _) => {
                 let x = ((((self.cursor_x / frontend.dimensions.0 as f32) - 0.5) * 2.0) / frontend.screen_ratio) * self.zoom;
                 let y = ((((frontend.dimensions.1 as f32 - self.cursor_y) / frontend.dimensions.1 as f32) - 0.5) * 2.0) * self.zoom;
                 match button {

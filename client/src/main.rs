@@ -1,3 +1,4 @@
+#![feature(drain_filter)]
 #![allow(clippy::new_without_default)]
 
 extern crate core;
@@ -24,7 +25,7 @@ use rustaria::api::identifier::Identifier;
 use rustaria::api::registry::Registry;
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::chunk::{Chunk, ChunkLayer};
-use rustaria::debug::DebugKind;
+use rustaria::debug::DebugCategory;
 use world::player::PlayerSystem;
 
 mod frontend;
@@ -62,12 +63,13 @@ impl Client {
     pub fn new() -> Result<Client> {
         let frontend = Frontend::new()?;
         let mut debug = DebugRenderer::new(&frontend)?;
-        debug.enable(DebugKind::EntityVelocity);
-        debug.enable(DebugKind::EntityCollision);
-        debug.enable(DebugKind::ChunkBorders);
+        debug.enable(DebugCategory::EntityVelocity);
+        debug.enable(DebugCategory::EntityCollision);
+        debug.enable(DebugCategory::ChunkMeshing);
+        debug.enable(DebugCategory::ChunkBorders);
 
         Ok(Client {
-            api: Api::new(),
+            api: Api::new()?,
             camera: Camera {
                 pos: Vector2D::zero(),
                 zoom: 10.0,
@@ -91,6 +93,7 @@ impl Client {
     pub fn tick_events(&mut self) -> Result<()> {
         for event in self.frontend.poll_events() {
             if let WindowEvent::Key(Key::O, _, _, _) = event {
+                self.reload();
                 self.world = Some(self.join_world()?);
             }
             if let Some(world) = &mut self.world {
@@ -104,7 +107,6 @@ impl Client {
         if let Some(world) = &mut self.world {
             world.tick(&self.api, &mut self.debug)?
         }
-        self.debug.finish()?;
         Ok(())
     }
 
@@ -191,59 +193,5 @@ impl Client {
     pub fn reload(&mut self) {
         info!("reloading");
         self.api.reload();
-
-        //  self.carrier = Registries {
-        //             tile: Registry::new(vec![
-        //                 (
-        //                     Identifier::new("dirt"),
-        //                     TilePrototype {
-        //                         image: Some(Identifier::new("image/tile/dirt.png")),
-        //                         collision: true,
-        //                         connection_type: ConnectionType::Connected
-        //                     },
-        //                 ),
-        //                 (
-        //                     Identifier::new("air"),
-        //                     TilePrototype {
-        //                         image: None,
-        //                         collision: false,
-        //                         connection_type: ConnectionType::Isolated
-        //                     },
-        //                 ),
-        //             ]),
-        //             entity: Registry::new(vec![(
-        //                 Identifier::new("player"),
-        //                 EntityPrototype {
-        //                     position: PositionComponent {
-        //                         pos: vec2(24.0, 20.0),
-        //                     },
-        //                     velocity: Some(PhysicsComponent {
-        //                         vel: Default::default(),
-        //                         accel: Default::default(),
-        //                     }),
-        //                     collision: Some(CollisionComponent {
-        //                         collision_box: rect(-1.0, -1.0, 2.0, 2.0),
-        //                         collided: Default::default(),
-        //                     }),
-        //                     humanoid: Some(HumanoidComponent {
-        //                         jump_amount: 15.0,
-        //                         jump_speed: 20.0,
-        //                         run_acceleration: 0.08,
-        //                         run_slowdown: 0.2,
-        //                         run_max_speed: 11.0,
-        //
-        //                         // ignore this shit
-        //                         dir: Default::default(),
-        //                         jumping: false,
-        //                         jumped: false,
-        //                         jump_frames_remaining: 0.0,
-        //                     }),
-        //                     gravity: Some(GravityComponent { amount: 1.0 }),
-        //                     image: Some(Identifier::new("image/entity/glisco.png")),
-        //                     panel: rect(-1.0, -1.0, 2.0, 2.0),
-        //                 },
-        //             )]),
-        //             resources: Resources {}
-        //         };
     }
 }

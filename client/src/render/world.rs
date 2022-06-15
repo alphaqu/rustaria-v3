@@ -1,26 +1,26 @@
-use glium::{Blend, DrawParameters, Frame, Program, uniform};
 use glium::program::SourceCode;
+use glium::{uniform, Blend, DrawParameters, Frame, Program};
 
-use rustaria::api::{Api, Resources};
 use rustaria::api::registry::MappedRegistry;
+use rustaria::api::{Api, Resources};
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::entity::component::{PositionComponent, PrototypeComponent};
-use rustaria::entity::EntityStorage;
 use rustaria::entity::prototype::EntityPrototype;
+use rustaria::entity::EntityStorage;
 
-use crate::{Camera, DebugRenderer, Frontend, PlayerSystem};
 use crate::render::atlas::Atlas;
 use crate::render::buffer::MeshDrawer;
 use crate::render::builder::MeshBuilder;
 use crate::render::chunk::ChunkRenderer;
 use crate::render::entity::EntityRenderer;
 use crate::render::PosTexVertex;
+use crate::{Camera, DebugRenderer, Frontend, PlayerSystem};
 
 pub(crate) struct WorldRenderer {
     pos_color_program: Program,
     atlas: Atlas,
 
-    chunk_dirty: bool,
+    dirty_world: bool,
     chunk_renderer: ChunkRenderer,
 
     entity_drawer: MeshDrawer<PosTexVertex>,
@@ -67,12 +67,12 @@ impl WorldRenderer {
             entity_drawer: MeshDrawer::new(frontend)?,
             atlas,
             entity_renderers,
-            chunk_dirty: true,
+            dirty_world: true,
         })
     }
 
     pub fn dirty_world(&mut self) {
-        self.chunk_dirty = true;
+        self.chunk_renderer.remesh_world();
     }
 
     pub fn tick(
@@ -82,11 +82,8 @@ impl WorldRenderer {
         chunks: &ChunkStorage,
         debug: &mut DebugRenderer,
     ) -> eyre::Result<()> {
-        if self.chunk_dirty {
-            let player_pos = player.get_pos();
-            self.chunk_renderer.mesh(player_pos, chunks)?;
-            self.chunk_dirty = false;
-        }
+        let player_pos = player.get_pos();
+        self.chunk_renderer.tick(player_pos, chunks, debug)?;
 
         let mut builder = MeshBuilder::new();
         for (entity, (position, prototype)) in entities
@@ -115,7 +112,13 @@ impl WorldRenderer {
         camera: &Camera,
         frame: &mut Frame,
     ) -> eyre::Result<()> {
-        self.chunk_renderer.draw(frontend, &self.atlas, camera, &self.pos_color_program, frame)?;
+        self.chunk_renderer.draw(
+            frontend,
+            &self.atlas,
+            camera,
+            &self.pos_color_program,
+            frame,
+        )?;
         let uniforms = uniform! {
             screen_ratio: frontend.screen_ratio,
             atlas: &self.atlas.texture,
@@ -127,7 +130,8 @@ impl WorldRenderer {
             blend: Blend::alpha_blending(),
             ..DrawParameters::default()
         };
-        self.entity_drawer.draw(frame, &self.pos_color_program, &uniforms, &draw_parameters)?;
+        self.entity_drawer
+            .draw(frame, &self.pos_color_program, &uniforms, &draw_parameters)?;
         Ok(())
     }
 }

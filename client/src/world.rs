@@ -57,17 +57,17 @@ impl ClientWorld {
 			match packet {
 				ClientBoundPacket::Chunk(pos, chunk) => {
 					self.chunks.insert(pos, chunk);
-					self.renderer.dirty_world();
+					self.renderer.dirty_world()
 				}
 				ClientBoundPacket::Player(packet) => {
 					self.player.packet(api, packet, &mut self.entity, &self.chunks)?;
 				}
 			}
 		}
-		self.renderer.dirty_world();
 		self.player.tick(api, &mut self.network, &mut self.entity, &mut self.chunks)?;
 		self.entity.tick(api, &self.chunks, debug);
 		self.renderer.tick(&self.entity.storage, &self.player, &self.chunks, debug)?;
+		self.chunks.reset_dirty();
 		Ok(())
 	}
 

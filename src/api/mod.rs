@@ -1,6 +1,8 @@
 use mlua::{Lua, Table};
 use std::fs::read;
 use std::io;
+use std::sync::Arc;
+use rayon::{ThreadPool, ThreadPoolBuilder};
 
 use crate::api::identifier::Identifier;
 use crate::api::prototype::{Prototype};
@@ -9,6 +11,7 @@ use crate::chunk::block::{BlockLayerPrototype};
 use crate::entity::prototype::EntityPrototype;
 use crate::multi_deref_fields;
 use crate::ty::MultiDeref;
+use eyre::Result;
 
 pub mod id;
 pub mod identifier;
@@ -20,18 +23,20 @@ pub struct Api {
     pub lua: Lua,
     pub carrier: Carrier,
     pub resources: Resources,
+    pub thread_pool: Arc<ThreadPool>,
 }
 
 impl Api {
-    pub fn new() -> Api {
-        Api {
-            lua: Lua::new(),
-            carrier: Carrier {
-                block_layers: Registry::new(vec![]),
-                entity: Registry::new(vec![])
-            },
-            resources: Resources {}
-        }
+    pub fn new() -> Result<Api> {
+       Ok( Api {
+           lua: Lua::new(),
+           carrier: Carrier {
+               block_layers: Registry::new(vec![]),
+               entity: Registry::new(vec![])
+           },
+           resources: Resources {},
+           thread_pool: Arc::new(ThreadPoolBuilder::new().build()?)
+       })
     }
 
     pub fn reload(&mut self) {

@@ -25,7 +25,7 @@ implement_vertex!(PosTexVertex, position, texture);
 #[derive(Copy, Clone)]
 pub struct PosColorVertex {
     position: [f32; 2],
-    color: [f32; 3],
+    color: [f32; 4],
 }
 
 implement_vertex!(PosColorVertex, position, color);

@@ -29,7 +29,7 @@ impl<P: Quad<[f32; 2]>, T: Quad<[f32; 2]>> Quad<PosTexVertex> for (P, T) {
     }
 }
 
-impl<P: Quad<[f32; 2]>, C: Quad<[f32; 3]>> Quad<PosColorVertex> for (P, C) {
+impl<P: Quad<[f32; 2]>, C: Quad<[f32; 4]>> Quad<PosColorVertex> for (P, C) {
 	fn expand(self) -> [PosColorVertex; 4] {
 		let p = self.0.expand();
 		let t = self.1.expand();

@@ -1,10 +1,10 @@
 //! Systems and stuff
 
-use crate::debug::{DebugKind, DebugRendererImpl};
+use crate::debug::{DebugCategory, DebugRendererImpl};
 use crate::entity::component::{GravityComponent, PhysicsComponent};
 use crate::entity::component::PositionComponent;
 use crate::entity::EntityStorage;
-use crate::TPS;
+use crate::{draw_debug, TPS};
 
 pub mod collision;
 pub mod humanoid;
@@ -16,7 +16,7 @@ impl VelocitySystem {
 		for (_, (position, velocity)) in
 		world.query_mut::<(&mut PositionComponent, &mut PhysicsComponent)>()
 		{
-			debug.draw_line(DebugKind::EntityVelocity, 0xff6188, position.pos, position.pos + (velocity.vel * (TPS as f32 / 30.0)));
+			draw_debug!(debug, DebugCategory::EntityVelocity, (position.pos, position.pos + (velocity.vel * (TPS as f32 / 30.0))), 0xff6188, 1.0);
 			position.pos += velocity.vel;
 			velocity.vel += velocity.accel;
 		}

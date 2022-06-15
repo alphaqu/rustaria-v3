@@ -1,9 +1,9 @@
 #version 330
 
 layout(location = 0) in vec2 position;
-layout(location = 1) in vec3 color;
+layout(location = 1) in vec4 color;
 
-out vec3 v_color;
+out vec4 v_color;
 
 uniform float screen_ratio;
 uniform vec2 player_pos;

@@ -2,14 +2,14 @@ use std::ops::Index;
 
 use euclid::{rect, vec2, Rect, Size2D, Vector2D};
 
-use crate::debug::{DebugKind, DebugRendererImpl};
+use crate::debug::{DebugCategory, DebugRendererImpl};
 use crate::entity::component::{CollisionComponent, PhysicsComponent, PositionComponent};
 use crate::entity::EntityStorage;
-use crate::ty::direction::DirMap;
 use crate::ty::block_pos::BlockPos;
+use crate::ty::direction::DirMap;
 use crate::ty::WS;
 use crate::util::aabb;
-use crate::{Api, ChunkStorage};
+use crate::{draw_debug, Api, ChunkStorage};
 
 pub struct CollisionSystem;
 
@@ -39,17 +39,17 @@ impl CollisionSystem {
             let y1 = new_rect.min_y().min(old_rect.min_y()).floor() as i64;
             let x2 = new_rect.max_x().max(old_rect.max_x()).ceil() as i64;
             let y2 = new_rect.max_y().max(old_rect.max_y()).ceil() as i64;
-            debug.draw_hrect(
-                DebugKind::EntityCollision,
-                0x727072,
+            draw_debug!(
+                debug,
+                DebugCategory::EntityCollision,
                 rect(
                     x1 as f32,
                     y1 as f32,
                     x2 as f32 - x1 as f32,
                     y2 as f32 - y1 as f32,
-                ),
+                )
             );
-            debug.draw_hrect(DebugKind::EntityCollision, 0xfcfcfa, old_rect);
+            draw_debug!(debug, DebugCategory::EntityCollision, old_rect, 0xfcfcfa);
 
             let mut collisions = Vec::new();
             for x in x1..x2 {
@@ -72,7 +72,7 @@ impl CollisionSystem {
                 if let Some(Some((d, contact))) =
                     aabb::resolve_dynamic_rect_vs_rect(physics.vel, old_rect, 1.0, pos)
                 {
-                    debug.draw_hrect(DebugKind::EntityCollision, 0xc1c0c0, pos);
+                    draw_debug!(debug, DebugCategory::EntityCollision, pos);
                     physics.vel += d;
                     physics.accel += contact
                         .to_vec2()
@@ -106,7 +106,7 @@ fn test_collision(
                     aabb::dynamic_rect_vs_rect(vel, collision_area, 1.0, tile)
                         .map(|collision| (tile, collision.contact_time))
                 {
-                    debug.draw_hrect(DebugKind::EntityCollision, 0x939293, pos);
+                    draw_debug!(debug, DebugCategory::EntityCollision, pos, 0x939293);
                     collisions.push((pos, contact_time));
                 }
             }
