@@ -21,9 +21,18 @@ impl HumanoidSystem {
             //	physics.vel.x = -humanoid.run_max_speed / TPS as f32;
             //}
 
+	        if humanoid.dir.length() != 0.0 {
+		        let max_speed = humanoid.run_max_speed / TPS as f32;
+		        if physics.vel.x < -max_speed {
+			        physics.vel.x = -max_speed;
+		        } else if physics.vel.x > max_speed {
+			        physics.vel.x = max_speed;
+		        }
+	        }
+
             if collision.collided[Direction::Up] {
 	            // TODO cleanup terraria movement code
-                if humanoid.dir.x < 0.0 && physics.vel.x > -(humanoid.run_max_speed / TPS as f32) {
+                if humanoid.dir.x < 0.0 {
                     if physics.vel.x > humanoid.run_slowdown / TPS as f32 {
                         physics.vel.x -= humanoid.run_slowdown / TPS as f32;
                     }
@@ -52,7 +61,7 @@ impl HumanoidSystem {
             }
 
             if humanoid.jump_frames_remaining > 0.0 {
-	            physics.vel.y = physics.vel.y.max( humanoid.jump_speed / TPS as f32);
+	            physics.vel.y = physics.vel.y.max(humanoid.jump_speed / TPS as f32);
 	            humanoid.jump_frames_remaining -= 1.0 / TPS as f32;
             }
         }

@@ -1,4 +1,6 @@
+use std::time::Instant;
 use mlua::prelude::LuaResult;
+use tracing::info;
 use crate::api::Carrier;
 use crate::api::luna::lib::registry_builder::RegistryBuilder;
 use crate::entity::prototype::EntityPrototype;
@@ -6,6 +8,7 @@ use crate::chunk::block::BlockLayerPrototype;
 
 /// Creates a carrier
 pub struct Stargate {
+	pub start: Instant,
 	pub block_layer: RegistryBuilder<BlockLayerPrototype>,
 	pub entity: RegistryBuilder<EntityPrototype>,
 }
@@ -13,6 +16,7 @@ pub struct Stargate {
 impl Stargate {
 	pub fn new() -> Stargate {
 		Stargate {
+			start: Instant::now(),
 			block_layer: RegistryBuilder::new(),
 			entity: RegistryBuilder::new()
 		}
@@ -20,6 +24,7 @@ impl Stargate {
 
 	/// *Carrier has arrived!* - Carrier
 	pub fn build(&mut self) -> Carrier {
+		info!("Rustaria reloaded in {}ms", self.start.elapsed().as_secs_f32() / 1000.0);
 		Carrier  {
 			block_layer: self.block_layer.build(),
 			entity: self.entity.build()

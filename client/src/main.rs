@@ -63,12 +63,12 @@ impl Client {
     pub fn new() -> Result<Client> {
         let run_dir = std::env::current_dir().wrap_err("Could not find current directory.")?;
         let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
-        let mut debug = DebugRenderer::new(&frontend).wrap_err("Could not initialize debug render.")?;
-        debug.enable(DebugCategory::EntityVelocity);
-        debug.enable(DebugCategory::EntityCollision);
-        debug.enable(DebugCategory::ChunkMeshing);
-        debug.enable(DebugCategory::ChunkBorders);
-
+        let debug = DebugRenderer::new(&frontend).wrap_err("Could not initialize debug render.")?;
+        //debug.enable(DebugCategory::EntityVelocity);
+        //debug.enable(DebugCategory::EntityCollision);
+        //debug.enable(DebugCategory::ChunkMeshing);
+        //debug.enable(DebugCategory::ChunkBorders);
+//
         Ok(Client {
             api: Api::new(run_dir, vec![PathBuf::from("../plugin")])?,
             camera: Camera {
