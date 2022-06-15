@@ -6,7 +6,7 @@ use eyre::{Result, WrapErr};
 use mlua::{Chunk, Lua, Table};
 use mlua::prelude::LuaError;
 use tracing::debug;
-use crate::api::Resources;
+use crate::api::{ResourceKind, Resources};
 use crate::ty::identifier::Identifier;
 
 /// Holds everything luna.
@@ -29,7 +29,7 @@ impl Luna {
 			lua.create_function(move |lua, mut location: Identifier| {
 				location.namespace.write_str(".lua").map_err(|io| LuaError::external(io))?;
 				debug!(target: "luna::loading", "Loading {}", location);
-				let data = resources.get_src(&location)?;
+				let data = resources.get_resource(ResourceKind::Source, &location)?;
 				Self::load_inner(lua, &location, &data)?.into_function()
 			})?,
 		)?;

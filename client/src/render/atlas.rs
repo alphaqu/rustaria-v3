@@ -9,7 +9,7 @@ use rectangle_pack::{
 };
 use tracing::{error, trace, warn};
 
-use rustaria::api::{Resources, Api};
+use rustaria::api::{Resources, Api, ResourceKind};
 use rustaria::ty::identifier::Identifier;
 
 use crate::Frontend;
@@ -38,7 +38,7 @@ impl Atlas {
 
         // Load all images
         for location in image_locations {
-            if let Ok(image) = api.resources.get_asset(location) {
+            if let Ok(image) = api.resources.get_resource(ResourceKind::Assets, location) {
                 match image::load_from_memory(&image) {
                     Ok(image) => {
                         images.insert(location.clone(), image);

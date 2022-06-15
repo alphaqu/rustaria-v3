@@ -1,25 +1,29 @@
-use mlua::{Lua, Table};
-use std::fs::read;
+use std::collections::HashMap;
 use std::io;
+use std::io::ErrorKind;
+use std::path::PathBuf;
 use std::sync::Arc;
-use rayon::{ThreadPool, ThreadPoolBuilder};
 
-use crate::ty::identifier::Identifier;
-use crate::api::prototype::Prototype;
+use eyre::{Context, Result};
+use rayon::{ThreadPool, ThreadPoolBuilder};
+use tracing::{debug, warn};
+
+use crate::api::luna::glue::Glue;
+use crate::api::luna::lib::stargate::Stargate;
+use crate::api::luna::Luna;
+use crate::api::plugin::Plugin;
 use crate::api::registry::Registry;
 use crate::chunk::block::BlockLayerPrototype;
 use crate::entity::prototype::EntityPrototype;
 use crate::multi_deref_fields;
+use crate::ty::identifier::Identifier;
 use crate::ty::MultiDeref;
-use eyre::Result;
-use crate::api::luna::glue::Glue;
-use crate::api::luna::lib::stargate::Stargate;
-use crate::api::luna::Luna;
 
+pub mod luna;
+pub mod plugin;
 pub mod prototype;
 pub mod registry;
 pub mod util;
-pub mod luna;
 
 pub struct Api {
     pub luna: Luna,
@@ -29,17 +33,44 @@ pub struct Api {
 }
 
 impl Api {
-    pub fn new() -> Result<Api> {
-        let resources = Resources {};
-        Ok( Api {
-           luna: Luna::new(&resources)?,
-           carrier: Carrier {
-               block_layer: Registry::empty(),
-               entity: Registry::empty()
-           },
-           resources,
-           thread_pool: Arc::new(ThreadPoolBuilder::new().build()?)
-       })
+    pub fn new(run_dir: PathBuf, extra: Vec<PathBuf>) -> Result<Api> {
+        let plugins_path = run_dir.join("./plugins");
+        if !plugins_path.exists() {
+            std::fs::create_dir_all(&plugins_path).wrap_err("Could not create dirs.")?;
+        }
+
+        let mut paths: Vec<PathBuf> = std::fs::read_dir(plugins_path)?
+            .flatten()
+            .map(|entry| entry.path())
+            .collect();
+        paths.extend(extra);
+
+        let mut plugins = HashMap::new();
+        for path in paths {
+            if path.is_dir()
+                || (path.is_file()
+                    && path
+                        .extension()
+                        .map(|extention| extention.to_str().unwrap() == "zip")
+                        .unwrap_or(false))
+            {
+                let plugin = Plugin::new(&path)?;
+                plugins.insert(plugin.id.clone(), plugin);
+            }
+        }
+
+        let resources = Resources {
+            plugins: Arc::new(plugins),
+        };
+        Ok(Api {
+            luna: Luna::new(&resources)?,
+            carrier: Carrier {
+                block_layer: Registry::empty(),
+                entity: Registry::empty(),
+            },
+            resources,
+            thread_pool: Arc::new(ThreadPoolBuilder::new().build()?),
+        })
     }
 
     pub fn reload(&mut self) -> Result<()> {
@@ -49,35 +80,48 @@ impl Api {
             let glue = Glue::new(&mut stargate);
             self.luna.lua.globals().set("reload", glue.clone())?;
 
-            // TODO plugins
-            // reload our mod
-            let location = Identifier::new("init.lua");
-            let data = self.resources.get_src(&location)?;
-            let chunk = self.luna.load(&location, &data)?;
-            chunk.exec()?;
+            for plugin in self.resources.plugins.values() {
+                debug!("Reloading {}", &plugin.id);
+                let identifier = Identifier::new("main.lua");
+                let data = self.resources.get_resource(ResourceKind::Source, &identifier).wrap_err(format!(
+                    "Could not find entrypoint \"main.lua\" for plugin {}",
+                    plugin.id
+                ))?;
+
+                self.luna
+                    .load(&identifier, &data)?
+                    .exec()?;
+            }
         }
 
         self.carrier = stargate.build();
         Ok(())
     }
 }
+pub enum ResourceKind {
+    Assets,
+    Source,
+}
 
 #[derive(Clone)]
-pub struct Resources {}
+pub struct Resources {
+    pub plugins: Arc<HashMap<String, Plugin>>,
+}
 
 impl Resources {
-    pub fn get_asset(&self, location: &Identifier) -> io::Result<Vec<u8>> {
-        if location.namespace != "rustaria" {
-            panic!("cringe")
-        }
-        read(format!("./plugin/asset/{}", location.path))
-    }
+    pub fn get_resource(&self, kind: ResourceKind, location: &Identifier) -> io::Result<Vec<u8>> {
+        let plugin = self.plugins.get(&location.namespace).ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                format!("Plugin {} does not exist", location.namespace),
+            )
+        })?;
 
-    pub fn get_src(&self, location: &Identifier) -> io::Result<Vec<u8>> {
-        if location.namespace != "rustaria" {
-            panic!("cringe")
-        }
-        read(format!("./plugin/src/{}", location.path))
+        let prefix = match kind {
+            ResourceKind::Assets => "assets",
+            ResourceKind::Source => "src",
+        };
+        plugin.archive.get(&format!("{}/{}", prefix, location.path))
     }
 }
 

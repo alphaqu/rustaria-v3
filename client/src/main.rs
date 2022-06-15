@@ -3,8 +3,9 @@
 
 extern crate core;
 
+use std::path::PathBuf;
 use euclid::Vector2D;
-use eyre::Result;
+use eyre::{Context, Result};
 use glfw::{Key, WindowEvent};
 use glium::Surface;
 use mlua::Lua;
@@ -60,15 +61,16 @@ pub struct Client {
 
 impl Client {
     pub fn new() -> Result<Client> {
-        let frontend = Frontend::new()?;
-        let mut debug = DebugRenderer::new(&frontend)?;
+        let run_dir = std::env::current_dir().wrap_err("Could not find current directory.")?;
+        let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
+        let mut debug = DebugRenderer::new(&frontend).wrap_err("Could not initialize debug render.")?;
         debug.enable(DebugCategory::EntityVelocity);
         debug.enable(DebugCategory::EntityCollision);
         debug.enable(DebugCategory::ChunkMeshing);
         debug.enable(DebugCategory::ChunkBorders);
 
         Ok(Client {
-            api: Api::new()?,
+            api: Api::new(run_dir, vec![PathBuf::from("../plugin")])?,
             camera: Camera {
                 pos: Vector2D::zero(),
                 zoom: 10.0,
