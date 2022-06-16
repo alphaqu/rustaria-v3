@@ -27,7 +27,7 @@ impl EntityStorage {
 	pub fn new(api: &Api) -> EntityStorage {
 		EntityStorage {
 			world: Default::default(),
-			templates: api.carrier.entity.map(|id, prototype| prototype.create(id))
+			templates: api.carrier.entity.map(|_, id, prototype| prototype.create(id))
 		}
 	}
 

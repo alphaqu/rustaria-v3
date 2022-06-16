@@ -49,7 +49,7 @@ impl PlayerSystem {
             joined: Default::default(),
             player_entity: api.carrier
                 .entity
-                .identifier_to_id(&Identifier::new("player"))
+                .ident_to_id(&Identifier::new("player"))
                 .wrap_err("Could not find Player entity")?,
         })
     }

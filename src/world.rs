@@ -44,8 +44,8 @@ impl World {
 			chunk,
 			entity: EntityWorld::new(api)?,
 			rand: Xoroshiro64Star::seed_from_u64(69420),
-			baked_spreaders: api.carrier.block_layer.map(|_, layer| {
-				layer.registry.map(|_, prototype| {
+			baked_spreaders: api.carrier.block_layer.map(|_, _, layer| {
+				layer.registry.map(|_, _, prototype| {
 					prototype.spread.as_ref().map(|value| {
 						BakedBlockSpreader::new(layer, value)
 					})
@@ -135,8 +135,8 @@ impl BakedBlockSpreader {
 	pub fn new(layer: &BlockLayerPrototype, block: &BlockSpreader) -> BakedBlockSpreader {
 		let mut out = HashMap::new();
 		for (from, to) in &block.convert_table {
-			if let Some(from_id) = layer.registry.identifier_to_id(from) {
-				if let Some(to_id) = layer.registry.identifier_to_id(to) {
+			if let Some(from_id) = layer.registry.ident_to_id(from) {
+				if let Some(to_id) = layer.registry.ident_to_id(to) {
 					out.insert(from_id, to_id);
 				}
 			}

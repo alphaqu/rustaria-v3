@@ -76,7 +76,7 @@ impl PlayerSystem {
             tick: 0,
             player_entity: api.carrier
                 .entity
-                .identifier_to_id(&Identifier::new("player"))
+                .ident_to_id(&Identifier::new("player"))
                 .wrap_err("Player where")?,
             presses: vec![],
         })
@@ -174,9 +174,9 @@ impl PlayerSystem {
                     match press {
                         Press::Use(x, y) => {
                             if let Ok(pos) = BlockPos::try_from(vec2::<_, WS>(x, y) + pos) {
-                                let layer_id = api.carrier.block_layer.identifier_to_id(&Identifier::new("tile")).unwrap();
+                                let layer_id = api.carrier.block_layer.ident_to_id(&Identifier::new("tile")).unwrap();
                                 let layer = api.carrier.block_layer.get(layer_id);
-                                let block_id = layer.registry.identifier_to_id(&Identifier::new("grass")).unwrap();
+                                let block_id = layer.registry.ident_to_id(&Identifier::new("grass")).unwrap();
                                 world.place_block(api, pos, layer_id, block_id);
                                 network.send(ServerBoundWorldPacket::SetBlock(pos, layer_id, block_id))?;
                             }

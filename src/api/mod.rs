@@ -9,6 +9,7 @@ use rayon::{ThreadPool, ThreadPoolBuilder};
 use tracing::{debug, warn};
 
 use crate::api::luna::glue::Glue;
+use crate::api::luna::lib::reload::Reload;
 use crate::api::luna::lib::stargate::Stargate;
 use crate::api::luna::Luna;
 use crate::api::plugin::Plugin;
@@ -73,11 +74,15 @@ impl Api {
         })
     }
 
-    pub fn reload(&mut self) -> Result<()> {
+    pub fn reload(&mut self, reload: &mut Reload) -> Result<()> {
         // Prepare for reload
-        let mut stargate = Stargate::new();
+        reload.stargate.register_builder::<BlockLayerPrototype>();
+        reload.stargate.register_builder::<EntityPrototype>();
+
+        
         {
-            let glue = Glue::new(&mut stargate);
+
+            let glue = Glue::new(reload);
             self.luna.lua.globals().set("reload", glue.clone())?;
 
             for plugin in self.resources.plugins.values() {
@@ -94,7 +99,11 @@ impl Api {
             }
         }
 
-        self.carrier = stargate.build();
+        self.carrier = Carrier {
+            block_layer: reload.stargate.build_registry::<BlockLayerPrototype>(),
+            entity: reload.stargate.build_registry::<EntityPrototype>()
+        };
+
         Ok(())
     }
 }

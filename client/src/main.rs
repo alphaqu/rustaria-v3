@@ -19,6 +19,9 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 use crate::frontend::Frontend;
 use debug::Debug;
+use rustaria::api::luna::lib::reload::Reload;
+use rustaria::api::luna::lib::stargate::Stargate;
+use rustaria::api::registry::Registry;
 use crate::render::Camera;
 use crate::world::ClientWorld;
 use rustaria::ty::identifier::Identifier;
@@ -28,11 +31,15 @@ use rustaria::debug::DebugCategory;
 use rustaria::TPS;
 use rustaria::world::World;
 use world::player::PlayerSystem;
+use crate::api::ClientApi;
+use crate::render::world::chunk::block::BlockRendererPrototype;
+use crate::render::world::chunk::layer::BlockLayerRendererPrototype;
 
 mod frontend;
 mod render;
 mod world;
 pub mod debug;
+pub mod api;
 
 const TICK_DURATION: Duration = Duration::from_nanos((1000000000 / TPS) as u64);
 
@@ -47,14 +54,14 @@ fn main() -> Result<()> {
         .init();
 
     color_eyre::install()?;
-    let mut runtime = Client::new()?;
-    runtime.reload()?;
-    runtime.run()?;
+    let mut client = Client::new()?;
+    client.api.reload()?;
+    client.run()?;
     Ok(())
 }
 
 pub struct Client {
-    api: Api,
+    api: ClientApi,
     camera: Camera,
     debug: Debug,
     frontend: Frontend,
@@ -73,7 +80,7 @@ impl Client {
         //debug.enable(DebugCategory::ChunkBorders);
 //
         Ok(Client {
-            api: Api::new(run_dir, vec![PathBuf::from("../plugin")])?,
+            api: ClientApi::new(run_dir, vec![PathBuf::from("../plugin")])?,
             camera: Camera {
                 pos: Vector2D::zero(),
                 zoom: 10.0,
@@ -97,9 +104,9 @@ impl Client {
                     break;
                 }
             }
+
             self.draw()?;
             self.debug.tick();
-
         }
 
         Ok(())
@@ -109,7 +116,7 @@ impl Client {
         let start = Instant::now();
         for event in self.frontend.poll_events() {
             if let WindowEvent::Key(Key::O, _, _, _) = event {
-                self.reload()?;
+                self.api.reload()?;
                 self.world = Some(self.join_world()?);
             }
             if let Some(world) = &mut self.world {
@@ -153,17 +160,17 @@ impl Client {
         for y in 0..9 {
             for x in 0..9 {
                 out.push(Chunk {
-                    layers: self.api.carrier.block_layer.map(|id, prototype| {
+                    layers: self.api.carrier.block_layer.map(|_, id, prototype| {
                         let dirt = prototype.registry.create(
                             prototype
                                 .registry
-                                .identifier_to_id(&Identifier::new("dirt"))
+                                .ident_to_id(&Identifier::new("dirt"))
                                 .expect("where dirt"),
                         );
                         let air = prototype.registry.create(
                             prototype
                                 .registry
-                                .identifier_to_id(&Identifier::new("air"))
+                                .ident_to_id(&Identifier::new("air"))
                                 .expect("where air"),
                         );
 
@@ -191,12 +198,10 @@ impl Client {
                                     [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a],
                                 ],
                             }
+                        } else if x == 0 || (y > 0 && x != 2) || x > 3 {
+                            ChunkLayer::new_copy(air)
                         } else {
-                            if x == 0 || (y > 0 && x != 2) || x > 3 {
-                                ChunkLayer::new_copy(air)
-                            } else {
-                                ChunkLayer::new_copy(dirt)
-                            }
+                            ChunkLayer::new_copy(dirt)
                         }
                     }),
                 });
@@ -208,10 +213,5 @@ impl Client {
             &self.api,
             World::new(&self.api, ChunkStorage::new(9, 9, out).unwrap()).unwrap(),
         )
-    }
-
-    pub fn reload(&mut self) -> Result<()>{
-        info!("reloading");
-        self.api.reload()
     }
 }

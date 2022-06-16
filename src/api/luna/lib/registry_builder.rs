@@ -1,9 +1,10 @@
-use std::any::type_name;
+use std::any::{Any, type_name};
 use std::collections::HashMap;
 use std::mem;
+use std::ops::Deref;
 use mlua::prelude::{LuaError, LuaResult};
 use mlua::{FromLua, Lua, Table, Value};
-use tracing::debug;
+use tracing::{debug, trace};
 use crate::api::prototype::Prototype;
 use crate::api::registry::Registry;
 use crate::ty::identifier::Identifier;
@@ -22,7 +23,7 @@ impl<P: Prototype> RegistryBuilder<P> {
 	}
 
 	pub fn register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
-		for value in value.pairs::<Value, P>() {
+		for value in value.pairs::<Value, Value>() {
 			let (identifier, prototype) = value?;
 			let (identifier, priority) = match identifier {
 				val @ Value::String(_) => {
@@ -34,8 +35,8 @@ impl<P: Prototype> RegistryBuilder<P> {
 				_ => return Err(LuaError::external("Registry type must be Table { name = , priority = } or an identifier")),
 			};
 
-			debug!("{}: Added {identifier} {prototype:?}", type_name::<P>());
-			self.entries.insert(identifier, (priority, prototype));
+			debug!("{}: Adding {identifier}", type_name::<P>());
+			self.entries.insert(identifier, (priority, lua.unpack(prototype)?));
 		}
 		Ok(())
 	}
@@ -49,10 +50,41 @@ impl<P: Prototype> RegistryBuilder<P> {
 
 use apollo::*;
 
+pub trait DynRegistryBuilder {
+	fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()>;
+	fn  build(&mut self) -> Box<dyn Any>;
+}
+
+impl<P: Prototype> DynRegistryBuilder for RegistryBuilder<P> {
+	fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
+		self.register(lua, value)
+	}
+
+	fn build(&mut self) -> Box<dyn Any> {
+		Box::new(self.build())
+	}
+}
+
+pub struct LuaRegistryBuilder {
+	inner: Box<dyn DynRegistryBuilder>,
+}
+
+impl LuaRegistryBuilder {
+	pub fn new<P: Prototype>(inner: RegistryBuilder<P>) -> LuaRegistryBuilder  {
+		LuaRegistryBuilder {
+			inner: Box::new(inner)
+		}
+	}
+
+	pub fn build<P: Prototype>(mut self) -> Registry<P> {
+		*self.inner.build().downcast::<Registry<P>>().expect("we fucked up hard with downcasting here")
+	}
+}
+
 #[lua_impl]
-impl<P: Prototype> RegistryBuilder<P> {
+impl LuaRegistryBuilder {
 	#[lua_method(register)]
 	pub fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
-		self.register(lua, value)
+		self.inner.lua_register(lua, value)
 	}
 }

@@ -11,7 +11,7 @@ use crate::render::world::WorldRenderer;
 use rustaria::network::packet::ClientBoundPacket;
 use rustaria::player::ServerBoundPlayerPacket;
 use rustaria::world::{ClientBoundWorldPacket, World};
-use crate::{Camera, Debug, Frontend, PlayerSystem};
+use crate::{Camera, ClientApi, Debug, Frontend, PlayerSystem};
 
 pub mod player;
 
@@ -27,7 +27,7 @@ pub struct ClientWorld {
 }
 
 impl ClientWorld {
-	pub fn new_integrated(frontend: &Frontend, api: &Api, world: World) -> Result<ClientWorld> {
+	pub fn new_integrated(frontend: &Frontend, api: &ClientApi, world: World) -> Result<ClientWorld> {
 		let (network, server_network) = new_networking();
 		// Send join packet
 		network.send(ServerBoundPlayerPacket::Join())?;
@@ -50,7 +50,7 @@ impl ClientWorld {
 		Some(self.player.get_camera())
 	}
 
-	pub fn tick(&mut self, api: &Api, debug: &mut Debug) -> Result<()> {
+	pub fn tick(&mut self, api: &ClientApi, debug: &mut Debug) -> Result<()> {
 		if let Some(server) = &mut self.integrated {
 			server.tick(api)?;
 		}

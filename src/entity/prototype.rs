@@ -16,13 +16,12 @@ pub struct EntityPrototype {
     pub collision: Option<CollisionComponent>,
     pub humanoid: Option<HumanoidComponent>,
     pub gravity: Option<GravityComponent>,
-    // Rendering
-    pub image: Option<Identifier>,
-    pub panel: Rect<f32, WS>,
 }
 
 impl Prototype for EntityPrototype {
-
+    fn get_name() -> &'static str {
+        "entity"
+    }
 }
 impl FactoryPrototype for EntityPrototype {
     type Item = EntityBuilder;
@@ -54,9 +53,7 @@ impl FromLua for EntityPrototype {
             velocity: lua.from_value(table.get("velocity")?)?,
             collision:  lua.from_value(table.get("collision")?)?,
             humanoid: lua.from_value(table.get("humanoid")?)?,
-            gravity: lua.from_value(table.get("gravity")?)?,
-            image: table.get("image")?,
-            panel: lua.from_value(table.get("panel")?)?
+            gravity: lua.from_value(table.get("gravity")?)?
         })
     }
 }

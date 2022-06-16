@@ -1,14 +1,14 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use euclid::{rect, Rect, size2, vec2, Vector2D};
+use euclid::{rect, vec2, Vector2D};
 use eyre::Result;
 use glium::{Blend, DrawParameters, Frame, Program, uniform};
 use mlua::LuaSerdeExt;
+use layer::BlockLayerRenderer;
 
 use rustaria::api::Api;
 use rustaria::api::registry::MappedRegistry;
-use rustaria::chunk::{BlockLayer, Chunk, CHUNK_SIZE, ConnectionType};
-use rustaria::chunk::block::{Block, BlockPrototype};
+use rustaria::chunk::{Chunk, CHUNK_SIZE};
 use rustaria::chunk::layer::BlockLayerPrototype;
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::debug::{DebugCategory, DebugRendererImpl};
@@ -18,29 +18,38 @@ use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::direction::{Direction, DirMap};
 
-use crate::{Camera, Debug, Frontend};
+use crate::{Camera, ClientApi, Debug, Frontend};
 use crate::render::atlas::Atlas;
 use crate::render::buffer::MeshDrawer;
 use crate::render::builder::MeshBuilder;
-use crate::render::neighbor::{NeighborMatrixBuilder, SpriteConnectionKind};
 use crate::render::PosTexVertex;
 
-pub struct ChunkRenderer {
+pub mod layer;
+pub mod block;
+
+pub struct WorldChunkRenderer {
     drawer: MeshDrawer<PosTexVertex>,
     cached_meshes: HashMap<ChunkPos, MeshBuilder<PosTexVertex>>,
-    layer_renderers: MappedRegistry<BlockLayerPrototype, BlockLayerRenderer>,
+    layer_renderers: MappedRegistry<BlockLayerPrototype, Option<BlockLayerRenderer>>,
     chunks_dirty: bool,
 }
 
-impl ChunkRenderer {
-    pub fn new(api: &Api, frontend: &Frontend, atlas: &Atlas) -> Result<ChunkRenderer> {
-        Ok(ChunkRenderer {
+impl WorldChunkRenderer {
+    pub fn new(api: &ClientApi, frontend: &Frontend, atlas: &Atlas) -> Result<WorldChunkRenderer> {
+        Ok(WorldChunkRenderer {
             drawer: frontend.create_drawer()?,
             cached_meshes: Default::default(),
             layer_renderers: api
                 .carrier
                 .block_layer
-                .map(|_, prototype| BlockLayerRenderer::new(api, prototype, atlas)),
+                .map(|ident, id, prototype| {
+                    let ident = api.carrier.block_layer.id_to_ident(id);
+                    if let Some(id) = api.c_carrier.block_layer_renderer.ident_to_id(ident) {
+                        Some(api.c_carrier.block_layer_renderer.get(id).create(api, prototype, atlas))
+                    } else {
+                        None
+                    }
+                }),
             chunks_dirty: true,
         })
     }
@@ -165,117 +174,16 @@ impl ChunkRenderer {
         }
 
         for (id, layer) in chunk.layers.iter() {
-            self.layer_renderers.get(id).mesh_chunk_layer(
-                pos,
-                layer,
-                neighbors.map(|_, option| option.map(|c| c.layers.get(id))),
-                builder,
-                debug
-            );
-        }
-    }
-}
-
-pub struct KindDesc {
-    uv: Rect<f32, WS>,
-    rect: Rect<f32, WS>,
-}
-
-pub struct BlockLayerRenderer {
-    entry_renderers: MappedRegistry<BlockPrototype, Option<BlockRenderer>>,
-    kind_descs: Vec<KindDesc>,
-}
-
-impl BlockLayerRenderer {
-    pub fn new(api: &Api, prototype: &BlockLayerPrototype, atlas: &Atlas) -> BlockLayerRenderer {
-        let mut kind_uvs = Vec::new();
-        for value in SpriteConnectionKind::iter() {
-            kind_uvs.push(KindDesc {
-                uv: api
-                    .luna.lua
-                    .from_value(prototype.get_uv.call(format!("{value:?}")).unwrap())
-                    .unwrap(),
-                rect: api
-                    .luna.lua
-                    .from_value(prototype.get_rect.call(format!("{value:?}")).unwrap())
-                    .unwrap(),
-            });
-        }
-        BlockLayerRenderer {
-            entry_renderers: prototype.registry.map(|_, prototype| {
-                prototype.image.as_ref().map(|image| BlockRenderer {
-                    tex_pos: atlas.get(image),
-                    connection_type: prototype.connection_type,
-                })
-            }),
-            kind_descs: kind_uvs,
-        }
-    }
-
-    pub fn mesh_chunk_layer(
-	    &self,
-	    chunk: ChunkPos,
-	    layer: &BlockLayer,
-	    neighbors: DirMap<Option<&BlockLayer>>,
-	    builder: &mut MeshBuilder<PosTexVertex>,
-	    debug: &mut Debug,
-    ) {
-        let func = |tile: &Block| {
-            self.entry_renderers
-                .get(tile.id)
-                .as_ref()
-                .map(|renderer| renderer.connection_type)
-        };
-
-        let mut matrix = NeighborMatrixBuilder::new(layer.map(ConnectionType::Isolated, func));
-        matrix.compile_internal();
-
-        for dir in Direction::values() {
-            if let Some(neighbor) = neighbors[dir] {
-                matrix.compile_edge(dir, &neighbor.map(ConnectionType::Isolated, func));
-            }
-        }
-
-        let connection_layer = matrix.export();
-        layer.entries(|entry, connection| {
-            if let Some(renderer) = self.entry_renderers.get(connection.id) {
-                renderer.mesh(
-                    BlockPos::new(chunk, entry),
-                    &self.kind_descs[connection_layer[entry] as u8 as usize],
+            if let Some(renderer) = self.layer_renderers.get(id) {
+                renderer.mesh_chunk_layer(
+                    pos,
+                    layer,
+                    neighbors.map(|_, option| option.map(|c| c.layers.get(id))),
                     builder,
                     debug
                 );
             }
-        });
-    }
-}
-
-pub struct BlockRenderer {
-    pub tex_pos: Rect<f32, Atlas>,
-    pub connection_type: ConnectionType,
-}
-
-impl BlockRenderer {
-    pub fn mesh(&self, pos: BlockPos, desc: &KindDesc, builder: &mut MeshBuilder<PosTexVertex>, debug: &mut Debug) {
-        let mut texture = self.tex_pos;
-
-        let variation = get_variation(pos) % ((texture.size.width / texture.size.height) as u32);
-        let layout_width = texture.size.width / 3.0;
-
-        let layout_height = texture.size.height;
-        texture.origin.x += layout_width * variation as f32;
-
-        texture.size.width = desc.uv.size.width * layout_width;
-        texture.size.height = desc.uv.size.height * layout_height;
-        texture.origin.x += desc.uv.origin.x * layout_width;
-        texture.origin.y += desc.uv.origin.y * layout_height;
-        let mut quad_pos = desc.rect;
-
-        quad_pos.origin += size2(pos.x() as f32, pos.y() as f32);
-
-        const VARIATION_COLORS: [u32; 3] = [0xff0000, 0x00ff00, 0x0000ff];
-        draw_debug!(debug, DebugCategory::ChunkMeshing, vec2(pos.x() as f32 + 0.5, pos.y() as f32 + 0.5), VARIATION_COLORS[(variation % 3) as usize], 5.0, 0.5);
-        builder.push_quad((quad_pos, texture));
+        }
     }
 }
 

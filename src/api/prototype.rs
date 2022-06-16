@@ -1,8 +1,8 @@
-use std::fmt::Debug;
 use mlua::FromLua;
 use crate::ty::id::Id;
 
-pub trait Prototype where Self: Sized + FromLua + Debug + 'static {
+pub trait Prototype where Self: Sized + FromLua + 'static {
+	fn get_name() -> &'static str;
 }
 
 pub trait FactoryPrototype: Prototype {

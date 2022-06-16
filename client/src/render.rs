@@ -3,12 +3,9 @@ use glium::implement_vertex;
 use rustaria::ty::WS;
 
 pub mod atlas;
-pub mod entity;
 pub mod buffer;
 pub mod builder;
 pub mod world;
-mod neighbor;
-mod chunk;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
