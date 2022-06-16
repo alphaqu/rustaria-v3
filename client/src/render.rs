@@ -6,7 +6,6 @@ pub mod atlas;
 pub mod entity;
 pub mod buffer;
 pub mod builder;
-pub mod debug;
 pub mod world;
 mod neighbor;
 mod chunk;

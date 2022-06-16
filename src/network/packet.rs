@@ -1,9 +1,11 @@
 use crate::ty::id::Id;
 use crate::Chunk;
-use crate::chunk::block::{BlockPrototype, BlockLayerPrototype};
+use crate::chunk::block::BlockPrototype;
+use crate::chunk::layer::BlockLayerPrototype;
 use crate::player::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
 use crate::ty::chunk_pos::ChunkPos;
 use crate::ty::block_pos::BlockPos;
+use crate::world::{ClientBoundWorldPacket, ServerBoundWorldPacket};
 
 #[macro_export]
 macro_rules! packet {
@@ -24,12 +26,11 @@ macro_rules! packet {
 }
 
 pub enum ServerBoundPacket {
-    RequestChunk(ChunkPos),
-    SetBlock(BlockPos, Id<BlockLayerPrototype>, Id<BlockPrototype>),
+    World(ServerBoundWorldPacket),
     Player(ServerBoundPlayerPacket),
 }
 
 pub enum ClientBoundPacket {
-    Chunk(ChunkPos, Chunk),
+    World(ClientBoundWorldPacket),
     Player(ClientBoundPlayerPacket),
 }

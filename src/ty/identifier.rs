@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter, Write};
 use mlua::{FromLua, Lua, Value};
+use tracing::trace;
 use crate::api::util;
 
 /// The identifier is a dual-string notifying which mod (namespace) the entry is from. and what it is.
@@ -20,6 +21,7 @@ impl Identifier {
 
 impl FromLua for Identifier {
     fn from_lua(lua_value: Value, _: &Lua) -> mlua::Result<Self> {
+        trace!("FromLua Identifier");
         let string = util::lua_string(lua_value)?;
         if let Some((namespace, path)) = string.split_once(':') {
             Ok(Identifier {

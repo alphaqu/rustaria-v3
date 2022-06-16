@@ -13,6 +13,7 @@ use crate::entity::EntityWorld;
 use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
 use crate::network::ServerNetwork;
 use crate::player::PlayerSystem;
+use crate::world::World;
 
 pub mod api;
 pub mod chunk;
@@ -22,50 +23,42 @@ pub mod network;
 pub mod player;
 pub mod ty;
 pub mod util;
+pub mod world;
 
-pub const TPS: usize = 144;
+pub const TPS: usize = 60;
 
 pub struct Server {
-    chunks: ChunkStorage,
     network: ServerNetwork,
-    entity: EntityWorld,
     player: PlayerSystem,
+    world: World,
 }
 
 impl Server {
-    pub fn new(api: &Api, network: ServerNetwork, storage: ChunkStorage) -> Result<Server> {
+    pub fn new(api: &Api, network: ServerNetwork, world: World) -> Result<Server> {
         info!("Launching integrated server.");
         Ok(Server {
-            chunks: storage,
             network,
-            entity: EntityWorld::new(api)?,
             player: PlayerSystem::new(api)?,
+            world
         })
     }
 
     pub fn tick(&mut self, api: &Api) -> Result<()> {
         for (token, packet) in self.network.poll() {
             match packet {
-                ServerBoundPacket::RequestChunk(pos) => {
-                    if let Some(chunk) = self.chunks.get(pos) {
-                        self.network
-                            .send(token, ClientBoundPacket::Chunk(pos, chunk.clone()))?;
-                    }
-                }
-                ServerBoundPacket::SetBlock(pos, layer, block) => {
-                    if let Some(chunk) = self.chunks.get_mut(pos.chunk) {
-                        chunk.layers.get_mut(layer)[pos.entry] = api.carrier.block_layer.get(layer).registry.create(block);
-                    }
-                }
+
                 ServerBoundPacket::Player(packet) => {
-                    self.player.packet(token, packet, &mut self.entity);
+                    self.player.packet(token, packet, &mut self.world);
+                }
+                ServerBoundPacket::World(packet) => {
+                    self.world.packet(api, token, packet, &mut self.network)?;
                 }
             }
         }
 
-        self.entity.tick(api, &self.chunks, &mut DummyRenderer);
+        self.world.tick(api, &mut DummyRenderer);
         self.player
-            .tick(&mut self.network, &self.entity)
+            .tick(&mut self.network, &self.world)
             .wrap_err("Ticking player system.")?;
         Ok(())
     }

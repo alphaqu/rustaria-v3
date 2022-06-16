@@ -4,34 +4,37 @@
 extern crate core;
 
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 use euclid::Vector2D;
 use eyre::{Context, Result};
 use glfw::{Key, WindowEvent};
 use glium::Surface;
-use mlua::Lua;
-use rustaria::api::{Api, Resources};
+use rustaria::api::Api;
 use tracing::info;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format;
-use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 use crate::frontend::Frontend;
-use crate::render::debug::DebugRenderer;
+use debug::Debug;
 use crate::render::Camera;
 use crate::world::ClientWorld;
 use rustaria::ty::identifier::Identifier;
-use rustaria::api::registry::Registry;
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria::debug::DebugCategory;
+use rustaria::TPS;
+use rustaria::world::World;
 use world::player::PlayerSystem;
 
 mod frontend;
 mod render;
 mod world;
+pub mod debug;
+
+const TICK_DURATION: Duration = Duration::from_nanos((1000000000 / TPS) as u64);
 
 fn main() -> Result<()> {
     let fmt_layer = fmt::layer()
@@ -53,7 +56,7 @@ fn main() -> Result<()> {
 pub struct Client {
     api: Api,
     camera: Camera,
-    debug: DebugRenderer,
+    debug: Debug,
     frontend: Frontend,
 
     world: Option<ClientWorld>,
@@ -63,8 +66,8 @@ impl Client {
     pub fn new() -> Result<Client> {
         let run_dir = std::env::current_dir().wrap_err("Could not find current directory.")?;
         let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
-        let debug = DebugRenderer::new(&frontend).wrap_err("Could not initialize debug render.")?;
-        //debug.enable(DebugCategory::EntityVelocity);
+        let mut debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
+        debug.enable(DebugCategory::TileSpread);
         //debug.enable(DebugCategory::EntityCollision);
         //debug.enable(DebugCategory::ChunkMeshing);
         //debug.enable(DebugCategory::ChunkBorders);
@@ -82,16 +85,28 @@ impl Client {
     }
 
     pub fn run(&mut self) -> Result<()> {
+        let mut last_tick = Instant::now();
         while self.frontend.running() {
             self.tick_events()?;
-            self.tick()?;
+
+            while let Some(value) = Instant::now().checked_duration_since(last_tick) {
+                if value >= TICK_DURATION {
+                    self.tick()?;
+                    last_tick += TICK_DURATION;
+                } else {
+                    break;
+                }
+            }
             self.draw()?;
+            self.debug.tick();
+
         }
 
         Ok(())
     }
 
     pub fn tick_events(&mut self) -> Result<()> {
+        let start = Instant::now();
         for event in self.frontend.poll_events() {
             if let WindowEvent::Key(Key::O, _, _, _) = event {
                 self.reload()?;
@@ -101,17 +116,21 @@ impl Client {
                 world.event(&self.frontend, event);
             }
         }
+        self.debug.log_event(start);
         Ok(())
     }
 
     pub fn tick(&mut self) -> Result<()> {
+        let start = Instant::now();
         if let Some(world) = &mut self.world {
             world.tick(&self.api, &mut self.debug)?
         }
+        self.debug.log_tick(start);
         Ok(())
     }
 
     pub fn draw(&mut self) -> Result<()> {
+        let start = Instant::now();
         let mut frame = self.frontend.start_draw();
         frame.clear_color(0.01, 0.01, 0.01, 1.0);
 
@@ -123,8 +142,8 @@ impl Client {
 
             world.draw(&self.frontend, &self.camera, &mut frame)?
         }
+        self.debug.log_draw(start);
         self.debug.draw(&self.frontend, &self.camera, &mut frame)?;
-
         frame.finish()?;
         Ok(())
     }
@@ -187,7 +206,7 @@ impl Client {
         ClientWorld::new_integrated(
             &self.frontend,
             &self.api,
-            ChunkStorage::new(9, 9, out).unwrap(),
+            World::new(&self.api, ChunkStorage::new(9, 9, out).unwrap()).unwrap(),
         )
     }
 

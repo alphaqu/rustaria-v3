@@ -13,7 +13,7 @@ use crate::api::luna::lib::stargate::Stargate;
 use crate::api::luna::Luna;
 use crate::api::plugin::Plugin;
 use crate::api::registry::Registry;
-use crate::chunk::block::BlockLayerPrototype;
+use crate::chunk::layer::BlockLayerPrototype;
 use crate::entity::prototype::EntityPrototype;
 use crate::multi_deref_fields;
 use crate::ty::identifier::Identifier;

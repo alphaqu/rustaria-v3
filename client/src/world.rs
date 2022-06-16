@@ -6,10 +6,12 @@ use rustaria::Server;
 use eyre::{Result, WrapErr};
 use glfw::WindowEvent;
 use glium::Frame;
+use rustaria::chunk::{BlockLayer, Chunk};
 use crate::render::world::WorldRenderer;
 use rustaria::network::packet::ClientBoundPacket;
 use rustaria::player::ServerBoundPlayerPacket;
-use crate::{Camera, DebugRenderer, Frontend, PlayerSystem};
+use rustaria::world::{ClientBoundWorldPacket, World};
+use crate::{Camera, Debug, Frontend, PlayerSystem};
 
 pub mod player;
 
@@ -19,24 +21,23 @@ pub struct ClientWorld {
 
 	network: ClientNetwork,
 	player: PlayerSystem,
-	entity: EntityWorld,
-	chunks: ChunkStorage,
+	world: World,
 
 	renderer: WorldRenderer
 }
 
 impl ClientWorld {
-	pub fn new_integrated(frontend: &Frontend, api: &Api, chunks: ChunkStorage) -> Result<ClientWorld> {
+	pub fn new_integrated(frontend: &Frontend, api: &Api, world: World) -> Result<ClientWorld> {
 		let (network, server_network) = new_networking();
 		// Send join packet
 		network.send(ServerBoundPlayerPacket::Join())?;
 
+		let storage = world.chunk.clone();
 		Ok(ClientWorld {
-			integrated: Some(Server::new(api, server_network, chunks.clone()).wrap_err("Failed to start server")?),
+			integrated: Some(Server::new(api, server_network, world).wrap_err("Failed to start server")?),
 			network,
 			player: PlayerSystem::new(api)?,
-			entity: EntityWorld::new(api)?,
-			chunks,
+			world: World::new(api, storage)?,
 			renderer: WorldRenderer::new(frontend, api)?
 		})
 	}
@@ -49,25 +50,31 @@ impl ClientWorld {
 		Some(self.player.get_camera())
 	}
 
-	pub fn tick(&mut self, api: &Api, debug: &mut DebugRenderer) -> Result<()> {
+	pub fn tick(&mut self, api: &Api, debug: &mut Debug) -> Result<()> {
 		if let Some(server) = &mut self.integrated {
 			server.tick(api)?;
 		}
 		for packet in self.network.poll() {
 			match packet {
-				ClientBoundPacket::Chunk(pos, chunk) => {
-					self.chunks.insert(pos, chunk);
-					self.renderer.dirty_world()
-				}
 				ClientBoundPacket::Player(packet) => {
-					self.player.packet(api, packet, &mut self.entity, &self.chunks)?;
+					self.player.packet(api, packet, &mut self.world)?;
+				}
+				ClientBoundPacket::World(packet) => {
+					match packet {
+						ClientBoundWorldPacket::Chunk(pos, chunk) => {
+							self.world.chunk.insert(pos, chunk);
+						}
+						ClientBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
+							self.world.place_block(api, pos, layer_id, block_id);
+						}
+					}
 				}
 			}
 		}
-		self.player.tick(api, &mut self.network, &mut self.entity, &mut self.chunks)?;
-		self.entity.tick(api, &self.chunks, debug);
-		self.renderer.tick(&self.entity.storage, &self.player, &self.chunks, debug)?;
-		self.chunks.reset_dirty();
+		self.player.tick(api, &mut self.network, &mut self.world)?;
+		self.world.tick(api, debug);
+		self.renderer.tick(&self.player, &self.world, debug)?;
+		self.world.chunk.reset_dirty();
 		Ok(())
 	}
 

@@ -48,6 +48,8 @@ impl<V: Clone> MeshBuilder<V> {
 	/// Combines another mesh builder, this also clears the other mesh builder..
 	pub fn append(&mut self, builder: &mut MeshBuilder<V>) {
 		let len = self.vertex.len() as u32;
+
+		self.index.reserve(builder.index.len());
 		for idx in builder.index.drain(..) {
 			self.index.push(len + idx);
 		}
@@ -57,9 +59,11 @@ impl<V: Clone> MeshBuilder<V> {
 	/// Extends another MeshBuilder, this does not mutate the other builder.
 	pub fn extend(&mut self, builder: &MeshBuilder<V>) {
 		let len = self.vertex.len() as u32;
+		self.index.reserve(builder.index.len());
 		for idx in &builder.index {
 			self.index.push(len + idx);
 		}
+
 		self.vertex.extend_from_slice(&builder.vertex);
 	}
 

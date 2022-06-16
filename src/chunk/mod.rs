@@ -3,12 +3,13 @@ use std::ops::{Index, IndexMut};
 
 use block::Block;
 use crate::api::registry::MappedRegistry;
-use crate::chunk::block::BlockLayerPrototype;
+use layer::BlockLayerPrototype;
 
 use crate::ty::block_layer_pos::BlockLayerPos;
 
 
 pub mod block;
+pub mod layer;
 pub mod storage;
 
 pub const CHUNK_SIZE: usize = 16;

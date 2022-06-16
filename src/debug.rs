@@ -1,5 +1,5 @@
-use std::time::Duration;
-use euclid::{Rect, vec2, Vector2D};
+use euclid::{Rect, rect, vec2, Vector2D};
+use crate::ty::block_pos::BlockPos;
 use crate::ty::WS;
 
 pub trait DebugRendererImpl {
@@ -9,17 +9,20 @@ pub trait DebugRendererImpl {
 pub struct DummyRenderer;
 impl DebugRendererImpl for DummyRenderer {
 	fn event(&mut self, _: DebugEvent) {
-
 	}
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
-pub enum DebugCategory {
-	Tile,
-	ChunkBorders,
-	ChunkMeshing,
-	EntityVelocity,
-	EntityCollision,
+use bitflags::bitflags;
+
+bitflags! {
+    pub struct DebugCategory: u32 {
+		const Tile = 1 << 0;
+		const TileSpread = 1 << 1;
+		const ChunkBorders = 1 << 2;
+		const ChunkMeshing = 1 << 3;
+		const EntityVelocity = 1 << 4;
+		const EntityCollision = 1 << 5;
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -30,6 +33,12 @@ pub enum DebugDraw {
 		stop: Vector2D<f32, WS>
 	},
 	Point(Vector2D<f32, WS>)
+}
+
+impl From<BlockPos> for DebugDraw {
+	fn from(block: BlockPos) -> Self {
+		DebugDraw::Quad(rect(block.x() as f32, block.y() as f32, 1.0, 1.0))
+	}
 }
 
 impl From<Rect<f32, WS>> for DebugDraw {

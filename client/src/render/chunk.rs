@@ -1,7 +1,5 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::time::Instant;
-
 use euclid::{rect, Rect, size2, vec2, Vector2D};
 use eyre::Result;
 use glium::{Blend, DrawParameters, Frame, Program, uniform};
@@ -10,7 +8,8 @@ use mlua::LuaSerdeExt;
 use rustaria::api::Api;
 use rustaria::api::registry::MappedRegistry;
 use rustaria::chunk::{BlockLayer, Chunk, CHUNK_SIZE, ConnectionType};
-use rustaria::chunk::block::{Block, BlockLayerPrototype, BlockPrototype};
+use rustaria::chunk::block::{Block, BlockPrototype};
+use rustaria::chunk::layer::BlockLayerPrototype;
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::debug::{DebugCategory, DebugRendererImpl};
 use rustaria::draw_debug;
@@ -19,7 +18,7 @@ use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::direction::{Direction, DirMap};
 
-use crate::{Camera, DebugRenderer, Frontend};
+use crate::{Camera, Debug, Frontend};
 use crate::render::atlas::Atlas;
 use crate::render::buffer::MeshDrawer;
 use crate::render::builder::MeshBuilder;
@@ -47,10 +46,10 @@ impl ChunkRenderer {
     }
 
     pub fn tick(
-        &mut self,
-        player_pos: Vector2D<f32, WS>,
-        chunks: &ChunkStorage,
-        debug: &mut DebugRenderer,
+	    &mut self,
+	    player_pos: Vector2D<f32, WS>,
+	    chunks: &ChunkStorage,
+	    debug: &mut Debug,
     ) -> Result<()> {
         for pos in chunks.get_dirty() {
             self.cached_meshes.remove(pos);
@@ -99,10 +98,10 @@ impl ChunkRenderer {
     }
 
     fn remesh_chunk(
-        &mut self,
-        pos: ChunkPos,
-        chunks: &ChunkStorage,
-        debug: &mut DebugRenderer,
+	    &mut self,
+	    pos: ChunkPos,
+	    chunks: &ChunkStorage,
+	    debug: &mut Debug,
     ) {
         if let Some(chunk) = chunks.get(pos) {
             let mut chunk_builder = MeshBuilder::new();
@@ -149,12 +148,12 @@ impl ChunkRenderer {
     }
 
     fn mesh_chunk(
-        &self,
-        pos: ChunkPos,
-        chunk: &Chunk,
-        chunks: &ChunkStorage,
-        builder: &mut MeshBuilder<PosTexVertex>,
-        debug: &mut DebugRenderer,
+	    &self,
+	    pos: ChunkPos,
+	    chunk: &Chunk,
+	    chunks: &ChunkStorage,
+	    builder: &mut MeshBuilder<PosTexVertex>,
+	    debug: &mut Debug,
     ) {
         let mut neighbors = DirMap::new([None; 4]);
         for dir in Direction::values() {
@@ -214,12 +213,12 @@ impl BlockLayerRenderer {
     }
 
     pub fn mesh_chunk_layer(
-        &self,
-        chunk: ChunkPos,
-        layer: &BlockLayer,
-        neighbors: DirMap<Option<&BlockLayer>>,
-        builder: &mut MeshBuilder<PosTexVertex>,
-        debug: &mut DebugRenderer,
+	    &self,
+	    chunk: ChunkPos,
+	    layer: &BlockLayer,
+	    neighbors: DirMap<Option<&BlockLayer>>,
+	    builder: &mut MeshBuilder<PosTexVertex>,
+	    debug: &mut Debug,
     ) {
         let func = |tile: &Block| {
             self.entry_renderers
@@ -257,7 +256,7 @@ pub struct BlockRenderer {
 }
 
 impl BlockRenderer {
-    pub fn mesh(&self, pos: BlockPos, desc: &KindDesc, builder: &mut MeshBuilder<PosTexVertex>, debug: &mut DebugRenderer) {
+    pub fn mesh(&self, pos: BlockPos, desc: &KindDesc, builder: &mut MeshBuilder<PosTexVertex>, debug: &mut Debug) {
         let mut texture = self.tex_pos;
 
         let variation = get_variation(pos) % ((texture.size.width / texture.size.height) as u32);

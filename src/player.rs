@@ -6,7 +6,7 @@ use eyre::{ContextCompat, Result};
 use hecs::{Entity, EntityRef};
 use tracing::{debug, info, trace, warn};
 
-use crate::{EntityWorld, packet, ServerNetwork};
+use crate::{EntityWorld, packet, ServerNetwork, World};
 use crate::api::Api;
 use crate::ty::id::Id;
 use crate::ty::identifier::Identifier;
@@ -78,7 +78,7 @@ impl PlayerSystem {
     pub fn tick(
         &mut self,
         networking: &mut ServerNetwork,
-        entity_world: &EntityWorld,
+        world: &World,
     ) -> Result<()> {
         for (token, entity) in self.joined.drain(..) {
             debug!("Sent joined packet");
@@ -91,7 +91,7 @@ impl PlayerSystem {
                 token,
                 ClientBoundPlayerPacket::RespondPos(
                     tick,
-                    self.get_player_entity(token, entity_world)
+                    self.get_player_entity(token, &world.entity)
                         .map(|entity| {
                             entity.get::<PositionComponent>().expect("where pos").pos
                         }),
@@ -106,11 +106,11 @@ impl PlayerSystem {
         &mut self,
         token: Token,
         packet: ServerBoundPlayerPacket,
-        entity: &mut EntityWorld,
+        world: &mut World,
     ) {
         match packet {
             ServerBoundPlayerPacket::SetMove(tick, speed) => {
-                if let Some(player) = self.get_player_entity(token, entity) {
+                if let Some(player) = self.get_player_entity(token, &mut world.entity) {
                     let mut component = player
                         .get_mut::<HumanoidComponent>()
                         .expect("Player does not have velocity");
@@ -123,7 +123,7 @@ impl PlayerSystem {
             }
             ServerBoundPlayerPacket::Join() => {
                 info!("Player {:?} joined", token);
-                let entity = entity.storage.push(self.player_entity);
+                let entity = world.entity.storage.push(self.player_entity);
                 self.players.insert(token, Some(entity));
                 self.joined.push((token, entity));
             }

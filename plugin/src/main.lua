@@ -91,6 +91,7 @@ reload.block_layer:register {
             }, size = { 0.25, 0.25 } };
 
         end,
+        default = "air",
         entries = {
             ["dirt"] = {
                 image = "image/tile/dirt.png",
@@ -105,7 +106,13 @@ reload.block_layer:register {
             ["grass"] = {
                 image = "image/tile/grass.png",
                 collision = true,
-                connection_type = "Connected"
+                connection_type = "Connected",
+                spread = {
+                    chance = 1.0,
+                    convert_table = {
+                        ["dirt"] = "grass"
+                    }
+                }
             },
             ["air"] = {
                 collision = false,
@@ -134,6 +141,7 @@ reload.block_layer:register {
                 size[2] / 48
             } };
         end,
+        default = "air",
         collision = false,
         entries = {
             ["dirt"] = {

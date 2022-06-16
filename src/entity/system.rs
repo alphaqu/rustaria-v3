@@ -31,7 +31,7 @@ impl GravitySystem {
 		for (_, (velocity, gravity)) in
 		world.query_mut::<(&mut PhysicsComponent, &GravityComponent)>()
 		{
-			velocity.vel.y -= (0.4 / TPS as f32) * gravity.amount;
+			velocity.vel.y -= (0.5 * gravity.amount) / TPS as f32;
 		}
 	}
 }

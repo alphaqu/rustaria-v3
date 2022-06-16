@@ -1,10 +1,11 @@
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
 use crate::api::prototype::Prototype;
 
 /// The internal id is a instance bound identifier to the registry,
 /// absolutely not forward/backwards compatible across versions or even game instances.
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive( Ord, PartialOrd, Debug)]
 pub struct Id<P: Prototype> {
     id: u32,
     prototype: PhantomData<P>,
@@ -22,6 +23,19 @@ impl<P: Prototype> Id<P> {
         self.id as usize
     }
 }
+
+impl<P: Prototype> Hash for Id<P> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state)
+    }
+}
+impl<P: Prototype> PartialEq<Self> for Id<P> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+impl<P: Prototype> Eq for Id<P> {}
+
 // This is needed as rustc cringes on the phantomdata
 impl<P: Prototype> Clone for Id<P> {
     fn clone(&self) -> Id<P> {

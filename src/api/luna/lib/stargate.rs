@@ -4,7 +4,7 @@ use tracing::info;
 use crate::api::Carrier;
 use crate::api::luna::lib::registry_builder::RegistryBuilder;
 use crate::entity::prototype::EntityPrototype;
-use crate::chunk::block::BlockLayerPrototype;
+use crate::chunk::layer::BlockLayerPrototype;
 
 /// Creates a carrier
 pub struct Stargate {

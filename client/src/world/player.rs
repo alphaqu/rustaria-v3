@@ -21,6 +21,7 @@ use rustaria::network::packet::ServerBoundPacket;
 use rustaria::player::{ClientBoundPlayerPacket, PlayerCommand, ServerBoundPlayerPacket};
 use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::WS;
+use rustaria::world::{ServerBoundWorldPacket, World};
 
 use crate::{Camera, Frontend};
 
@@ -135,15 +136,14 @@ impl PlayerSystem {
         &mut self,
         api: &Api,
         network: &mut ClientNetwork,
-        entity_world: &mut EntityWorld,
-        chunks: &mut ChunkStorage,
+        world: &mut World,
     ) -> Result<()> {
-        self.prediction_world.tick(api, chunks, &mut DummyRenderer);
-        if let Some(entity) = self.check(entity_world) {
+        self.prediction_world.tick(api, &world.chunk, &mut DummyRenderer);
+        if let Some(entity) = self.check(&world.entity) {
             self.send_command.dir = self.speed.dir;
             self.send_command.jumping = self.jump;
             {
-                let mut component = entity_world
+                let mut component = world.entity
                     .storage
                     .get_mut_comp::<HumanoidComponent>(entity)
                     .unwrap();
@@ -174,25 +174,18 @@ impl PlayerSystem {
                     match press {
                         Press::Use(x, y) => {
                             if let Ok(pos) = BlockPos::try_from(vec2::<_, WS>(x, y) + pos) {
-
-                                if let Some(chunk) =  chunks.get_mut(pos.chunk) {
-                                    for (id, layer) in chunk.layers.iter_mut() {
-                                        let prototype = api.carrier.block_layer.get(id);
-                                        if let Some(entry_id) =  prototype.registry.identifier_to_id(&Identifier::new("stone")) {
-                                            layer[pos.entry] = prototype.registry.get(entry_id).create(entry_id);
-                                            network.send(ServerBoundPacket::SetBlock(pos, id, entry_id))?;
-                                        }
-
-                                    }
-                                }
-
+                                let layer_id = api.carrier.block_layer.identifier_to_id(&Identifier::new("tile")).unwrap();
+                                let layer = api.carrier.block_layer.get(layer_id);
+                                let block_id = layer.registry.identifier_to_id(&Identifier::new("grass")).unwrap();
+                                world.place_block(api, pos, layer_id, block_id);
+                                network.send(ServerBoundWorldPacket::SetBlock(pos, layer_id, block_id))?;
                             }
                         }
                     }
                 }
             }
 
-            self.correct_offset(entity, entity_world);
+            self.correct_offset(entity, &world.entity);
         }
         Ok(())
     }
@@ -201,14 +194,13 @@ impl PlayerSystem {
         &mut self,
         api: &Api,
         packet: ClientBoundPlayerPacket,
-        entity_world: &mut EntityWorld,
-        chunks: &ChunkStorage,
+        world: &mut World,
     ) -> Result<()> {
         match packet {
             ClientBoundPlayerPacket::RespondPos(tick, pos) => {
-                if let Some(entity) = self.check(entity_world) {
+                if let Some(entity) = self.check(&world.entity) {
                     if let Some(pos) = pos {
-                        entity_world
+                        world.entity
                             .storage
                             .get_mut_comp::<PositionComponent>(entity)
                             .unwrap()
@@ -230,7 +222,7 @@ impl PlayerSystem {
                             entity.dir = speed.dir;
                             entity.jumping = speed.jumping;
                         }
-                        self.base_server_world.tick(api, chunks, &mut DummyRenderer);
+                        self.base_server_world.tick(api, &world.chunk, &mut DummyRenderer);
 
                         // If we reach the tick that we currently received,
                         // stop as the next events are the ones that the server has not yet seen.
@@ -240,13 +232,13 @@ impl PlayerSystem {
                     }
 
                     // Recompile our prediction
-                    self.compile_prediction(api, chunks);
+                    self.compile_prediction(api, &world.chunk);
                 }
             }
             ClientBoundPlayerPacket::Joined(entity) => {
                 debug!("Received joined packet");
                 self.server_player = Some(entity);
-                entity_world.storage.insert(entity, self.player_entity);
+                world.entity.storage.insert(entity, self.player_entity);
                 self.base_server_world
                     .storage
                     .insert(entity, self.player_entity);

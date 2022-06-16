@@ -7,6 +7,7 @@ use rustaria::chunk::storage::ChunkStorage;
 use rustaria::entity::component::{PositionComponent, PrototypeComponent};
 use rustaria::entity::prototype::EntityPrototype;
 use rustaria::entity::EntityStorage;
+use rustaria::world::World;
 
 use crate::render::atlas::Atlas;
 use crate::render::buffer::MeshDrawer;
@@ -14,7 +15,7 @@ use crate::render::builder::MeshBuilder;
 use crate::render::chunk::ChunkRenderer;
 use crate::render::entity::EntityRenderer;
 use crate::render::PosTexVertex;
-use crate::{Camera, DebugRenderer, Frontend, PlayerSystem};
+use crate::{Camera, Debug, Frontend, PlayerSystem};
 
 pub(crate) struct WorldRenderer {
     pos_color_program: Program,
@@ -76,17 +77,16 @@ impl WorldRenderer {
     }
 
     pub fn tick(
-        &mut self,
-        entities: &EntityStorage,
-        player: &PlayerSystem,
-        chunks: &ChunkStorage,
-        debug: &mut DebugRenderer,
+	    &mut self,
+	    player: &PlayerSystem,
+	    world: &World,
+	    debug: &mut Debug,
     ) -> eyre::Result<()> {
         let player_pos = player.get_pos();
-        self.chunk_renderer.tick(player_pos, chunks, debug)?;
+        self.chunk_renderer.tick(player_pos, &world.chunk, debug)?;
 
         let mut builder = MeshBuilder::new();
-        for (entity, (position, prototype)) in entities
+        for (entity, (position, prototype)) in world.entity.storage
             .query::<(&PositionComponent, &PrototypeComponent)>()
             .iter()
         {

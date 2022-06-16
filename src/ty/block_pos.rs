@@ -3,12 +3,12 @@ use std::fmt::{Display, Formatter};
 use euclid::Vector2D;
 
 use crate::chunk::CHUNK_SIZE;
-use crate::ty::{Error, Offset};
 use crate::ty::block_layer_pos::BlockLayerPos;
 use crate::ty::chunk_pos::ChunkPos;
 use crate::ty::Error::OutOfBounds;
+use crate::ty::{Error, Offset};
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Default)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, Default)]
 pub struct BlockPos {
     pub chunk: ChunkPos,
     pub entry: BlockLayerPos,
