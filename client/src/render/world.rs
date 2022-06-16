@@ -11,9 +11,10 @@ use crate::render::atlas::Atlas;
 use crate::render::buffer::MeshDrawer;
 use crate::render::builder::MeshBuilder;
 use crate::render::PosTexVertex;
-use crate::{Camera, ClientApi, Debug, Frontend, PlayerSystem};
+use crate::{Viewport, ClientApi, Debug, Frontend, PlayerSystem, Timing};
 use chunk::WorldChunkRenderer;
 use entity::EntityRenderer;
+use crate::render::draw::Draw;
 use crate::render::world::entity::WorldEntityRenderer;
 
 pub mod chunk;
@@ -61,30 +62,31 @@ impl WorldRenderer {
         })
     }
 
-    pub fn dirty_world(&mut self) {
-        self.chunk_renderer.remesh_world();
-    }
-
     pub fn tick(
         &mut self,
+        frontend: &Frontend,
         player: &PlayerSystem,
         world: &World,
         debug: &mut Debug,
     ) -> eyre::Result<()> {
-        let player_pos = player.get_pos();
-        self.chunk_renderer.tick(player_pos, &world.chunk, debug)?;
-        self.entity_renderer.tick(player, &world.entity)?;
+        self.chunk_renderer.tick(&world.chunk)?;
+       // self.entity_renderer.tick(player, &world.entity)?;
         Ok(())
     }
 
     pub fn draw(
         &mut self,
         frontend: &Frontend,
-        camera: &Camera,
+        player: &PlayerSystem,
+        world: &World,
         frame: &mut Frame,
+        viewport: &Viewport,
+        debug: &mut Debug,
+        timing: &Timing,
     ) -> eyre::Result<()> {
-        self.chunk_renderer.draw(frontend, &self.atlas, camera, &self.pos_color_program, frame)?;
-        self.entity_renderer.draw(frontend, &self.atlas, camera, &self.pos_color_program, frame)?;
+        let mut draw = Draw { frame, viewport, atlas: &self.atlas, frontend, debug, timing };
+        self.chunk_renderer.draw(&world.chunk, &self.pos_color_program, &mut draw)?;
+        self.entity_renderer.draw(player, &world.entity, &self.pos_color_program, &mut draw)?;
         Ok(())
     }
 }

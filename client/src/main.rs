@@ -5,7 +5,7 @@ extern crate core;
 
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
-use euclid::Vector2D;
+use euclid::{vec2, Vector2D};
 use eyre::{Context, Result};
 use glfw::{Key, WindowEvent};
 use glium::Surface;
@@ -22,24 +22,27 @@ use debug::Debug;
 use rustaria::api::luna::lib::reload::Reload;
 use rustaria::api::luna::lib::stargate::Stargate;
 use rustaria::api::registry::Registry;
-use crate::render::Camera;
+use crate::render::Viewport;
 use crate::world::ClientWorld;
 use rustaria::ty::identifier::Identifier;
 use rustaria::chunk::storage::ChunkStorage;
 use rustaria::chunk::{Chunk, ChunkLayer};
-use rustaria::debug::DebugCategory;
-use rustaria::TPS;
+use rustaria::debug::{DebugCategory, DebugRendererImpl};
+use rustaria::{draw_debug, TPS};
 use rustaria::world::World;
 use world::player::PlayerSystem;
 use crate::api::ClientApi;
+use crate::render::draw::Draw;
 use crate::render::world::chunk::block::BlockRendererPrototype;
 use crate::render::world::chunk::layer::BlockLayerRendererPrototype;
+use crate::timing::Timing;
 
 mod frontend;
 mod render;
 mod world;
 pub mod debug;
 pub mod api;
+mod timing;
 
 const TICK_DURATION: Duration = Duration::from_nanos((1000000000 / TPS) as u64);
 
@@ -61,12 +64,11 @@ fn main() -> Result<()> {
 }
 
 pub struct Client {
-    api: ClientApi,
-    camera: Camera,
+    viewport: Viewport,
     debug: Debug,
-    frontend: Frontend,
-
     world: Option<ClientWorld>,
+    api: ClientApi,
+    frontend: Frontend,
 }
 
 impl Client {
@@ -75,16 +77,13 @@ impl Client {
         let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
         let mut debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
         debug.enable(DebugCategory::TileSpread);
-        //debug.enable(DebugCategory::EntityCollision);
+        debug.enable(DebugCategory::EntityCollision);
         //debug.enable(DebugCategory::ChunkMeshing);
         //debug.enable(DebugCategory::ChunkBorders);
 //
         Ok(Client {
             api: ClientApi::new(run_dir, vec![PathBuf::from("../plugin")])?,
-            camera: Camera {
-                pos: Vector2D::zero(),
-                zoom: 10.0,
-            },
+            viewport: Viewport::new(&frontend, vec2(0.0, 0.0), 1.0),
             debug,
             frontend,
             world: None,
@@ -92,20 +91,15 @@ impl Client {
     }
 
     pub fn run(&mut self) -> Result<()> {
-        let mut last_tick = Instant::now();
+        let mut timing = Timing::new();
         while self.frontend.running() {
             self.tick_events()?;
 
-            while let Some(value) = Instant::now().checked_duration_since(last_tick) {
-                if value >= TICK_DURATION {
-                    self.tick()?;
-                    last_tick += TICK_DURATION;
-                } else {
-                    break;
-                }
+            while timing.next_tick() {
+                self.tick()?;
             }
 
-            self.draw()?;
+            self.draw(&timing)?;
             self.debug.tick();
         }
 
@@ -130,27 +124,29 @@ impl Client {
     pub fn tick(&mut self) -> Result<()> {
         let start = Instant::now();
         if let Some(world) = &mut self.world {
-            world.tick(&self.api, &mut self.debug)?
+            world.tick(&self.frontend, &self.api, &mut self.debug)?
         }
         self.debug.log_tick(start);
         Ok(())
     }
 
-    pub fn draw(&mut self) -> Result<()> {
+    pub fn draw(&mut self, timing: &Timing) -> Result<()> {
         let start = Instant::now();
         let mut frame = self.frontend.start_draw();
-        frame.clear_color(0.01, 0.01, 0.01, 1.0);
+        frame.clear_color(0.10, 0.10, 0.10, 1.0);
 
         if let Some(world) = &mut self.world {
-            if let Some(camera) = world.get_camera() {
-                self.camera.pos -= (self.camera.pos - camera.pos) * 0.05;
-                self.camera.zoom = camera.zoom;
+            if let Some(viewport) = world.get_viewport(&self.frontend) {
+                self.viewport.pos -= ((self.viewport.pos - viewport.pos) * 0.1) * timing.step();
+                self.viewport.zoom = viewport.zoom;
+                self.viewport.recompute_rect(&self.frontend);
             }
 
-            world.draw(&self.frontend, &self.camera, &mut frame)?
+
+            world.draw(&self.frontend, &mut frame, &self.viewport, &mut self.debug, timing)?;
         }
         self.debug.log_draw(start);
-        self.debug.draw(&self.frontend, &self.camera, &mut frame)?;
+        self.debug.draw(&self.frontend, &self.viewport, &mut frame)?;
         frame.finish()?;
         Ok(())
     }

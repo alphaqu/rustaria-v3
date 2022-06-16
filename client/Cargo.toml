@@ -19,7 +19,7 @@ tracing = "0.1.35"
 tracing-subscriber = "0.3.11"
 tracing-error = "0.2.0"
 
-glium = { version = "0.31.0", default-features = false, features = [] }
+glium = { git = "https://github.com/alphaqu/glium", default-features = false, features = [] }
 image = { version = "0.24.2", default-features = false, features = ["png"] }
 rectangle-pack = "0.4.2"
 

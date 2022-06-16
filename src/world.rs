@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoroshiro64Star;
-use crate::{Api, Chunk, ChunkPos, ChunkStorage, draw_debug, EntityWorld, packet, ServerNetwork};
+use crate::{Api, Chunk, ChunkPos, ChunkStorage, draw_debug, EntityWorld, packet, ServerNetwork, TPS};
 use crate::api::prototype::FactoryPrototype;
 use crate::api::registry::MappedRegistry;
 use crate::chunk::block::{BlockPrototype, BlockSpreader};
@@ -149,7 +149,7 @@ impl BakedBlockSpreader {
 	}
 
 	pub fn tick(&self, pos: BlockPos, layer_id: Id<BlockLayerPrototype>, chunks: &mut ChunkStorage, rand: &mut Xoroshiro64Star) -> SpreadResult {
-		if self.chance >= rand.gen_range(0.0..1.0) as f32 {
+		if (self.chance / TPS as f32) >= rand.gen_range(0.0..1.0) as f32 {
 			let mut spread = None;
 			let mut keep = false;
 			for dir in Direction::values() {

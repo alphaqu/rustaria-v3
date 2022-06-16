@@ -21,7 +21,7 @@ pub struct Frontend {
     pub ctx: Rc<glium::backend::Context>,
 
     pub dimensions: (u32, u32),
-    pub screen_ratio: f32,
+    pub aspect_ratio: f32,
 }
 
 impl Frontend {
@@ -84,7 +84,7 @@ impl Frontend {
             window,
             events,
             dimensions: (0, 0),
-            screen_ratio: 0.0
+            aspect_ratio: 0.0
         };
 
         frontend.resize(900, 600);
@@ -101,7 +101,7 @@ impl Frontend {
     
     fn resize(&mut self, width: u32, height: u32) {
         self.dimensions = (width, height);
-        self.screen_ratio = height as f32 / width as f32;
+        self.aspect_ratio = height as f32 / width as f32;
     }
 
     pub fn poll_events(&mut self) -> Vec<WindowEvent> {

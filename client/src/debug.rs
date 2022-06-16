@@ -1,7 +1,7 @@
 use crate::render::buffer::MeshDrawer;
 use crate::render::builder::MeshBuilder;
 use crate::render::PosColorVertex;
-use crate::{Camera, Frontend};
+use crate::{Viewport, Frontend};
 use euclid::{rect, vec2, Rect, Vector2D};
 use eyre::Result;
 use glium::program::SourceCode;
@@ -70,6 +70,13 @@ impl Debug {
     }
 
     pub fn tick(&mut self) {
+        for event in &mut self.events {
+            if event.ticks_remaining > 0 {
+                event.ticks_remaining -= 1;
+            }
+        }
+        self.events.drain_filter(|event| event.ticks_remaining == 0);
+
         if self.last_print.elapsed() > Duration::from_secs_f64(1.0) {
             self.last_print = Instant::now();
             let mut event_time = 0.0;
@@ -112,25 +119,19 @@ impl Debug {
         }
     }
 
-    pub fn draw(&mut self, frontend: &Frontend, camera: &Camera, frame: &mut Frame) -> Result<()> {
-        for event in &mut self.events {
-            if event.ticks_remaining > 0 {
-                event.ticks_remaining -= 1;
-            }
-
+    pub fn draw(&mut self, frontend: &Frontend, camera: &Viewport, frame: &mut Frame) -> Result<()> {
+        for event in &self.events {
             if self.categories.contains(event.category) {
                 let color = Self::get_color(event.color);
                 let line_size = self.line_size;
                 Self::mesh_event(&mut self.builder, color, line_size, event);
             }
         }
-        self.events.drain_filter(|event| event.ticks_remaining == 0);
-
         self.drawer.upload(&self.builder)?;
         self.builder.clear();
 
         let uniforms = uniform! {
-            screen_ratio: frontend.screen_ratio,
+            screen_ratio: frontend.aspect_ratio,
             player_pos: camera.pos.to_array(),
             zoom: camera.zoom,
         };

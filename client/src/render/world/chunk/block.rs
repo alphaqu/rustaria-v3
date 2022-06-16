@@ -1,6 +1,6 @@
 use euclid::{Rect, size2, vec2};
 use mlua::{FromLua, Lua, LuaSerdeExt, Value};
-use rustaria::api::prototype::{FactoryPrototype, Prototype};
+use rustaria::api::prototype::Prototype;
 use rustaria::api::util::lua_table;
 use rustaria::chunk::ConnectionType;
 use rustaria::debug::{DebugCategory, DebugRendererImpl};

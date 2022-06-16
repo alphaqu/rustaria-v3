@@ -10,8 +10,8 @@ use crate::BlockLayerRendererPrototype;
 use crate::render::world::entity::EntityRendererPrototype;
 
 pub struct ClientApi {
-    pub api: Api,
     pub c_carrier: ClientCarrier,
+    pub api: Api,
 }
 
 impl ClientApi {

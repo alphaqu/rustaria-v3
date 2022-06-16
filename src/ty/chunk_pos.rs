@@ -68,8 +68,8 @@ impl TryFrom<(i64, i64)> for ChunkPos {
 
     fn try_from(value: (i64, i64)) -> Result<Self, Self::Error> {
         Ok(ChunkPos {
-            x: u32::from_i64(value.0 / CHUNK_SIZE as i64).ok_or(Error::OutOfBounds)?,
-            y: u32::from_i64(value.1 / CHUNK_SIZE as i64).ok_or(Error::OutOfBounds)?,
+            x: u32::from_i64(value.0).ok_or(Error::OutOfBounds)?,
+            y: u32::from_i64(value.1).ok_or(Error::OutOfBounds)?,
         })
     }
 }

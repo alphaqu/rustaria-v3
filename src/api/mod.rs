@@ -27,10 +27,10 @@ pub mod registry;
 pub mod util;
 
 pub struct Api {
-    pub luna: Luna,
     pub carrier: Carrier,
     pub resources: Resources,
     pub thread_pool: Arc<ThreadPool>,
+    pub luna: Luna,
 }
 
 impl Api {

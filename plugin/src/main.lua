@@ -77,7 +77,7 @@ local wall_rect_pos_lookup = {
 if reload.client then
     reload.stargate.entity_renderer:register {
         ["player"] = {
-            image = "image/entity/glisco.png",
+            image = "image/entity/alpha.png",
             panel = {
                 origin = { -1.0, -1.0 },
                 size = { 2.0, 2.0 }
@@ -111,6 +111,10 @@ if reload.client then
                 },
                 ["grass"] = {
                     image = "image/tile/grass.png",
+                    connection_type = "Connected",
+                },
+                ["corrupt_grass"] = {
+                    image = "image/tile/corrupt_grass.png",
                     connection_type = "Connected",
                 }
             }
@@ -158,11 +162,14 @@ reload.stargate.block_layer:register {
                 collision = true,
             },
             ["grass"] = {
+                collision = true
+            },
+            ["corrupt_grass"] = {
                 collision = true,
                 spread = {
-                    chance = 1.0,
+                    chance = 10.0,
                     convert_table = {
-                        ["dirt"] = "grass"
+                        ["dirt"] = "corrupt_grass"
                     }
                 }
             },
@@ -198,7 +205,7 @@ reload.stargate.entity:register {
         humanoid = {
             jump_amount = 15.0,
             jump_speed = 20.0,
-            run_acceleration = 0.08,
+            run_acceleration = 0.12,
             run_slowdown = 0.2,
             run_max_speed = 11.0,
         },

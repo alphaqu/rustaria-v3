@@ -3,7 +3,7 @@ use std::collections::{HashMap, VecDeque};
 use euclid::{vec2, Vector2D};
 use eyre::{ContextCompat, Result};
 use glfw::{Action, Key, MouseButton, WindowEvent};
-use hecs::Entity;
+use hecs::{Component, Entity, Ref};
 use tracing::debug;
 
 use rustaria::ty::id::Id;
@@ -23,11 +23,11 @@ use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::WS;
 use rustaria::world::{ServerBoundWorldPacket, World};
 
-use crate::{Camera, Frontend};
+use crate::{Viewport, Frontend};
 
 const MAX_CORRECTION: f32 = 0.025;
 
-pub(crate) struct PlayerSystem {
+pub struct PlayerSystem {
     pub server_player: Option<Entity>,
     base_server_world: EntityWorld,
     prediction_world: EntityWorld,
@@ -92,7 +92,7 @@ impl PlayerSystem {
                 self.cursor_y = y as f32;
             }
             WindowEvent::MouseButton(button, Action::Press, _) => {
-                let x = ((((self.cursor_x / frontend.dimensions.0 as f32) - 0.5) * 2.0) / frontend.screen_ratio) * self.zoom;
+                let x = ((((self.cursor_x / frontend.dimensions.0 as f32) - 0.5) * 2.0) / frontend.aspect_ratio) * self.zoom;
                 let y = ((((frontend.dimensions.1 as f32 - self.cursor_y) / frontend.dimensions.1 as f32) - 0.5) * 2.0) * self.zoom;
                 match button {
                     MouseButton::Button1 => {
@@ -176,7 +176,7 @@ impl PlayerSystem {
                             if let Ok(pos) = BlockPos::try_from(vec2::<_, WS>(x, y) + pos) {
                                 let layer_id = api.carrier.block_layer.ident_to_id(&Identifier::new("tile")).unwrap();
                                 let layer = api.carrier.block_layer.get(layer_id);
-                                let block_id = layer.registry.ident_to_id(&Identifier::new("grass")).unwrap();
+                                let block_id = layer.registry.ident_to_id(&Identifier::new("corrupt_grass")).unwrap();
                                 world.place_block(api, pos, layer_id, block_id);
                                 network.send(ServerBoundWorldPacket::SetBlock(pos, layer_id, block_id))?;
                             }
@@ -263,11 +263,15 @@ impl PlayerSystem {
         }
     }
 
-    pub fn get_camera(&mut self) -> Camera {
-        Camera {
-            pos: self.get_pos(),
-            zoom: self.zoom,
-        }
+    pub fn get_comp<C: Component>(&self) -> Option<Ref<'_, C>> {
+        self.server_player.map(|entity| self.prediction_world
+                .storage
+                .get_comp::<C>(entity)
+                .unwrap())
+    }
+
+    pub fn get_viewport(&self, frontend: &Frontend) -> Viewport {
+        Viewport::new(frontend, self.get_pos(), self.zoom)
     }
 
     // If the server says a different value try to correct it without freaking the player out.
