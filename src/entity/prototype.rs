@@ -9,6 +9,7 @@ use crate::api::util;
 use crate::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent, PrototypeComponent};
 use crate::ty::WS;
 
+#[derive(Debug)]
 pub struct EntityPrototype {
     pub position: PositionComponent,
     pub velocity: Option<PhysicsComponent>,

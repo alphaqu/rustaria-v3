@@ -1,7 +1,9 @@
+use std::any::type_name;
 use std::collections::HashMap;
 use std::mem;
 use mlua::prelude::{LuaError, LuaResult};
 use mlua::{FromLua, Lua, Table, Value};
+use tracing::debug;
 use crate::api::prototype::Prototype;
 use crate::api::registry::Registry;
 use crate::ty::identifier::Identifier;
@@ -22,17 +24,18 @@ impl<P: Prototype> RegistryBuilder<P> {
 	pub fn register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
 		for value in value.pairs::<Value, P>() {
 			let (identifier, prototype) = value?;
-			match identifier {
+			let (identifier, priority) = match identifier {
 				val @ Value::String(_) => {
-					self.entries.insert(Identifier::from_lua(val, lua)?, (DEFAULT_PRIORITY, prototype));
+					(Identifier::from_lua(val, lua)?, DEFAULT_PRIORITY)
 				}
 				Value::Table(table) => {
-					let identifier = table.get::<_, Identifier>("name")?;
-					let priority = table.get::<_, Option<f32>>("priority")?.unwrap_or(DEFAULT_PRIORITY);
-					self.entries.insert(identifier, (priority, prototype));
+					(table.get::<_, Identifier>("name")?, table.get::<_, Option<f32>>("priority")?.unwrap_or(DEFAULT_PRIORITY))
 				}
 				_ => return Err(LuaError::external("Registry type must be Table { name = , priority = } or an identifier")),
-			}
+			};
+
+			debug!("{}: Added {identifier} {prototype:?}", type_name::<P>());
+			self.entries.insert(identifier, (priority, prototype));
 		}
 		Ok(())
 	}

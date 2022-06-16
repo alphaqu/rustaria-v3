@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use mlua::{FromLua, Function, Lua, LuaSerdeExt, Table, Value};
 use tracing::{info_span};
 use crate::api::luna::lib::registry_builder::RegistryBuilder;
@@ -15,6 +16,7 @@ pub struct Block {
 	pub collision: bool,
 }
 
+#[derive(Debug)]
 pub struct BlockPrototype {
 	pub image: Option<Identifier>,
 	pub collision: bool,
@@ -67,6 +69,12 @@ impl FromLua for BlockLayerPrototype {
 			get_rect: table.get("get_rect")?,
 			collision: table.get("collision")?,
 		})
+	}
+}
+
+impl Debug for BlockLayerPrototype {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		f.write_str(&format!("{} entries", self.registry.len()))
 	}
 }
 

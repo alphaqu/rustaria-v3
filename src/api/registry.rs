@@ -50,6 +50,10 @@ impl<P: Prototype> Registry<P> {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.lookup.len()
+    }
+
     pub fn entries(&self) -> &[P] {
         &self.lookup
     }

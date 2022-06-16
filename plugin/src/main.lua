@@ -97,6 +97,16 @@ reload.block_layer:register {
                 collision = true,
                 connection_type = "Connected"
             },
+            ["stone"] = {
+                image = "image/tile/stone.png",
+                collision = true,
+                connection_type = "Connected"
+            },
+            ["grass"] = {
+                image = "image/tile/grass.png",
+                collision = true,
+                connection_type = "Connected"
+            },
             ["air"] = {
                 collision = false,
                 connection_type = "Isolated"

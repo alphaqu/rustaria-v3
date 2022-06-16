@@ -178,10 +178,11 @@ impl PlayerSystem {
                                 if let Some(chunk) =  chunks.get_mut(pos.chunk) {
                                     for (id, layer) in chunk.layers.iter_mut() {
                                         let prototype = api.carrier.block_layer.get(id);
-                                        let entry_id = prototype.registry.identifier_to_id(&Identifier::new("air")).expect("where my air");
+                                        if let Some(entry_id) =  prototype.registry.identifier_to_id(&Identifier::new("stone")) {
+                                            layer[pos.entry] = prototype.registry.get(entry_id).create(entry_id);
+                                            network.send(ServerBoundPacket::SetBlock(pos, id, entry_id))?;
+                                        }
 
-                                        layer[pos.entry] = prototype.registry.get(entry_id).create(entry_id);
-                                        network.send(ServerBoundPacket::SetBlock(pos, id, entry_id))?;
                                     }
                                 }
 

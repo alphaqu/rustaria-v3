@@ -78,7 +78,7 @@ impl<T: Clone> IndexMut<BlockLayerPos> for ChunkLayer<T> {
 }
 
 
-#[derive(Clone, Copy, Eq, PartialEq, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, serde::Deserialize)]
 pub enum ConnectionType {
 	// air
 	Isolated,

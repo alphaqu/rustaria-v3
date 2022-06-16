@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::ops::{Index, IndexMut};
 
 use euclid::{vec2, Vector2D};
@@ -135,6 +136,14 @@ impl<V> DirMap<V> {
             3 => Right,
             _ => panic!("wtf")
         }
+    }
+}
+
+
+impl<D: Debug> Debug for DirMap<D> {
+
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
 

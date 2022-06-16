@@ -19,29 +19,29 @@ macro_rules! iter_components {
 }
 
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PrototypeComponent {
 	pub id: Id<EntityPrototype>,
 }
 
-#[derive(Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct GravityComponent {
 	pub amount: f32,
 }
 
-#[derive(Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct PhysicsComponent {
 	pub vel: Vector2D<f32, WS>,
 	pub accel: Vector2D<f32, WS>,
 }
 
-#[derive(Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 #[serde(transparent)]
 pub struct PositionComponent {
 	pub pos: Vector2D<f32, WS>
 }
 
-#[derive(Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 #[serde(transparent)]
 pub struct CollisionComponent {
 	pub collision_box: Rect<f32, WS>,
@@ -50,7 +50,7 @@ pub struct CollisionComponent {
 }
 
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct HumanoidComponent {
 	// Settings
 	pub jump_amount: f32,
