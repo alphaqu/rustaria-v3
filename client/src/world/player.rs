@@ -22,6 +22,7 @@ use rustaria::player::{ClientBoundPlayerPacket, PlayerCommand, ServerBoundPlayer
 use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::WS;
 use rustaria::world::{ServerBoundWorldPacket, World};
+use rustaria::world::chunk::layer::BlockLayerPrototype;
 
 use crate::{Viewport, Frontend};
 
@@ -50,14 +51,23 @@ pub struct PlayerSystem {
     tick: u32,
     player_entity: Id<EntityPrototype>,
     presses: Vec<Press>,
+
+    layer_id: Id<BlockLayerPrototype>,
+    place_block: Id<BlockPrototype>,
+    remove_block: Id<BlockPrototype>,
 }
 
 pub enum Press {
-    Use(f32, f32),
+    Use(f32, f32, Id<BlockPrototype>),
 }
 
 impl PlayerSystem {
     pub fn new(api: &Api) -> Result<Self> {
+        let layer_id = api.carrier.block_layer.ident_to_id(&Identifier::new("tile")).unwrap();
+        let layer = api.carrier.block_layer.get(layer_id);
+        let place_block = layer.registry.ident_to_id(&Identifier::new("corrupt_grass")).unwrap();
+        let remove_block = layer.registry.ident_to_id(&Identifier::new("air")).unwrap();
+
         Ok(Self {
             server_player: None,
             base_server_world: EntityWorld::new(api)?,
@@ -79,6 +89,9 @@ impl PlayerSystem {
                 .ident_to_id(&Identifier::new("player"))
                 .wrap_err("Player where")?,
             presses: vec![],
+            layer_id,
+            place_block,
+            remove_block
         })
     }
 
@@ -96,10 +109,11 @@ impl PlayerSystem {
                 let y = ((((frontend.dimensions.1 as f32 - self.cursor_y) / frontend.dimensions.1 as f32) - 0.5) * 2.0) * self.zoom;
                 match button {
                     MouseButton::Button1 => {
-                        // Use
-                        self.presses.push(Press::Use(x, y))
+                        self.presses.push(Press::Use(x, y, self.place_block))
                     }
-                    MouseButton::Button2 => {}
+                    MouseButton::Button2 => {
+                        self.presses.push(Press::Use(x, y,  self.remove_block))
+                    }
                     _ => {}
                 }
             }
@@ -172,13 +186,11 @@ impl PlayerSystem {
 
                 for press in self.presses.drain(..) {
                     match press {
-                        Press::Use(x, y) => {
+                        Press::Use(x, y, tile) => {
                             if let Ok(pos) = BlockPos::try_from(vec2::<_, WS>(x, y) + pos) {
-                                let layer_id = api.carrier.block_layer.ident_to_id(&Identifier::new("tile")).unwrap();
-                                let layer = api.carrier.block_layer.get(layer_id);
-                                let block_id = layer.registry.ident_to_id(&Identifier::new("corrupt_grass")).unwrap();
-                                world.place_block(api, pos, layer_id, block_id);
-                                network.send(ServerBoundWorldPacket::SetBlock(pos, layer_id, block_id))?;
+
+                                world.place_block(api, pos, self.layer_id, tile);
+                                network.send(ServerBoundWorldPacket::SetBlock(pos, self.layer_id, tile))?;
                             }
                         }
                     }
