@@ -3,14 +3,14 @@ use std::ops::Index;
 use euclid::{rect, vec2, Rect, Size2D, Vector2D};
 
 use crate::debug::{DebugCategory, DebugRendererImpl};
-use crate::entity::component::{CollisionComponent, PhysicsComponent, PositionComponent};
-use crate::entity::EntityStorage;
+use crate::world::entity::component::{CollisionComponent, PhysicsComponent, PositionComponent};
+use crate::world::entity::EntityStorage;
 use crate::ty::block_pos::BlockPos;
 use crate::ty::direction::DirMap;
 use crate::ty::WS;
 use crate::util::aabb;
 use crate::{draw_debug, Api, ChunkStorage};
-use crate::chunk::CHUNK_SIZE;
+use crate::world::chunk::CHUNK_SIZE;
 
 pub struct CollisionSystem;
 

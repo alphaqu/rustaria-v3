@@ -1,9 +1,9 @@
 //! Systems and stuff
 
 use crate::debug::{DebugCategory, DebugRendererImpl};
-use crate::entity::component::{GravityComponent, PhysicsComponent};
-use crate::entity::component::PositionComponent;
-use crate::entity::EntityStorage;
+use crate::world::entity::component::{GravityComponent, PhysicsComponent};
+use crate::world::entity::component::PositionComponent;
+use crate::world::entity::EntityStorage;
 use crate::{draw_debug, TPS};
 
 pub mod collision;

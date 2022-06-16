@@ -1,4 +1,4 @@
-use crate::chunk::CHUNK_SIZE;
+use crate::world::chunk::CHUNK_SIZE;
 use crate::ty;
 use crate::ty::Offset;
 

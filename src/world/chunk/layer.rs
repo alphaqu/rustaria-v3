@@ -4,7 +4,7 @@ use crate::api::luna::lib::registry_builder::RegistryBuilder;
 use crate::api::prototype::{Prototype};
 use crate::api::registry::Registry;
 use crate::api::util::lua_table;
-use crate::chunk::block::BlockPrototype;
+use crate::world::chunk::block::BlockPrototype;
 use crate::ty::identifier::Identifier;
 
 pub struct BlockLayerPrototype {

@@ -6,7 +6,7 @@ use crate::ty::id::Id;
 use crate::ty::identifier::Identifier;
 use crate::api::prototype::{FactoryPrototype, Prototype};
 use crate::api::util;
-use crate::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent, PrototypeComponent};
+use crate::world::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent, PrototypeComponent};
 use crate::ty::WS;
 
 #[derive(Debug)]

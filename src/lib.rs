@@ -6,19 +6,17 @@ use tracing::info;
 use ty::chunk_pos::ChunkPos;
 use crate::api::Api;
 
-use crate::chunk::storage::ChunkStorage;
-use crate::chunk::Chunk;
+use world::chunk::storage::ChunkStorage;
+use world::chunk::Chunk;
 use crate::debug::DummyRenderer;
-use crate::entity::EntityWorld;
-use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
+use world::entity::EntityWorld;
+use crate::network::packet::ServerBoundPacket;
 use crate::network::ServerNetwork;
 use crate::player::PlayerSystem;
 use crate::world::World;
 
 pub mod api;
-pub mod chunk;
 pub mod debug;
-pub mod entity;
 pub mod network;
 pub mod player;
 pub mod ty;

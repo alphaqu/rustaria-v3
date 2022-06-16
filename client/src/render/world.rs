@@ -3,8 +3,8 @@ use glium::{uniform, Blend, DrawParameters, Frame, Program};
 
 use rustaria::api::registry::MappedRegistry;
 use rustaria::api::Api;
-use rustaria::entity::component::{PositionComponent, PrototypeComponent};
-use rustaria::entity::prototype::EntityPrototype;
+use rustaria::world::entity::component::{PositionComponent, PrototypeComponent};
+use rustaria::world::entity::prototype::EntityPrototype;
 use rustaria::world::World;
 
 use crate::render::atlas::Atlas;

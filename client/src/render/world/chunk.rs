@@ -8,9 +8,9 @@ use mlua::LuaSerdeExt;
 
 use layer::BlockLayerRenderer;
 use rustaria::api::registry::MappedRegistry;
-use rustaria::chunk::layer::BlockLayerPrototype;
-use rustaria::chunk::storage::ChunkStorage;
-use rustaria::chunk::{Chunk, CHUNK_SIZE};
+use rustaria::world::chunk::layer::BlockLayerPrototype;
+use rustaria::world::chunk::storage::ChunkStorage;
+use rustaria::world::chunk::{Chunk, CHUNK_SIZE};
 use rustaria::debug::{DebugCategory, DebugRendererImpl};
 use rustaria::draw_debug;
 use rustaria::ty::block_pos::BlockPos;

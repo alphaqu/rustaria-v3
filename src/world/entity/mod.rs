@@ -9,10 +9,10 @@ use crate::ty::id::Id;
 use crate::api::prototype::{FactoryPrototype, Prototype};
 use crate::api::registry::MappedRegistry;
 use crate::debug::DebugRendererImpl;
-use crate::entity::prototype::EntityPrototype;
-use crate::entity::system::{GravitySystem, VelocitySystem};
-use crate::entity::system::collision::CollisionSystem;
-use crate::entity::system::humanoid::HumanoidSystem;
+use crate::world::entity::prototype::EntityPrototype;
+use crate::world::entity::system::{GravitySystem, VelocitySystem};
+use crate::world::entity::system::collision::CollisionSystem;
+use crate::world::entity::system::humanoid::HumanoidSystem;
 
 pub mod component;
 pub mod system;

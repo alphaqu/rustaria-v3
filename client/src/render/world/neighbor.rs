@@ -1,5 +1,5 @@
-use rustaria::chunk::ConnectionType;
-use rustaria::chunk::{ChunkLayer, CHUNK_SIZE};
+use rustaria::world::chunk::ConnectionType;
+use rustaria::world::chunk::{ChunkLayer, CHUNK_SIZE};
 use rustaria::ty::block_layer_pos::BlockLayerPos;
 use rustaria::ty::direction::{DirMap, Direction};
 use std::ops::{Deref, DerefMut};

@@ -1,7 +1,7 @@
 use euclid::Vector2D;
 use num::FromPrimitive;
 
-use crate::chunk::CHUNK_SIZE;
+use crate::world::chunk::CHUNK_SIZE;
 use crate::ty;
 use crate::ty::{Error, Offset};
 use crate::ty::direction::Direction;

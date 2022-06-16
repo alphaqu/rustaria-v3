@@ -1,7 +1,7 @@
 use euclid::{Rect, Vector2D};
 
 use crate::ty::id::Id;
-use crate::entity::prototype::EntityPrototype;
+use crate::world::entity::prototype::EntityPrototype;
 use crate::ty::direction::DirMap;
 use crate::ty::WS;
 
@@ -9,12 +9,12 @@ use crate::ty::WS;
 #[macro_export]
 macro_rules! iter_components {
     ($BLOCK:block) => {
-	    { type T = $crate::entity::component::PositionComponent; $BLOCK; }
-	    { type T = $crate::entity::component::PhysicsComponent; $BLOCK; }
-	    { type T = $crate::entity::component::CollisionComponent; $BLOCK; }
-	    { type T = $crate::entity::component::HumanoidComponent; $BLOCK; }
-	    { type T = $crate::entity::component::PrototypeComponent; $BLOCK; }
-	    { type T = $crate::entity::component::GravityComponent; $BLOCK; }
+	    { type T = $crate::world::entity::component::PositionComponent; $BLOCK; }
+	    { type T = $crate::world::entity::component::PhysicsComponent; $BLOCK; }
+	    { type T = $crate::world::entity::component::CollisionComponent; $BLOCK; }
+	    { type T = $crate::world::entity::component::HumanoidComponent; $BLOCK; }
+	    { type T = $crate::world::entity::component::PrototypeComponent; $BLOCK; }
+	    { type T = $crate::world::entity::component::GravityComponent; $BLOCK; }
     };
 }
 

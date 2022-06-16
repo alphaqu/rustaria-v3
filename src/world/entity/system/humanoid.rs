@@ -1,5 +1,5 @@
-use crate::entity::component::{CollisionComponent, HumanoidComponent, PhysicsComponent};
-use crate::entity::EntityStorage;
+use crate::world::entity::component::{CollisionComponent, HumanoidComponent, PhysicsComponent};
+use crate::world::entity::EntityStorage;
 use crate::ty::direction::Direction;
 use crate::TPS;
 

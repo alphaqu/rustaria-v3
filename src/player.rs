@@ -10,8 +10,8 @@ use crate::{EntityWorld, packet, ServerNetwork, World};
 use crate::api::Api;
 use crate::ty::id::Id;
 use crate::ty::identifier::Identifier;
-use crate::entity::component::{HumanoidComponent, PositionComponent};
-use crate::entity::prototype::EntityPrototype;
+use crate::world::entity::component::{HumanoidComponent, PositionComponent};
+use crate::world::entity::prototype::EntityPrototype;
 use crate::network::Token;
 use crate::ty::WS;
 

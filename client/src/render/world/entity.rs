@@ -18,9 +18,9 @@ use glium::{uniform, Blend, DrawParameters, Frame, Program};
 use hecs::Entity;
 use tracing::info;
 use rustaria::api::registry::MappedRegistry;
-use rustaria::entity::component::{PhysicsComponent, PositionComponent, PrototypeComponent};
-use rustaria::entity::prototype::EntityPrototype;
-use rustaria::entity::EntityWorld;
+use rustaria::world::entity::component::{PhysicsComponent, PositionComponent, PrototypeComponent};
+use rustaria::world::entity::prototype::EntityPrototype;
+use rustaria::world::entity::EntityWorld;
 use crate::render::draw::Draw;
 
 pub struct WorldEntityRenderer {

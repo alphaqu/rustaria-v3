@@ -16,7 +16,7 @@ pub struct Block {
 #[derive(Debug)]
 pub struct BlockPrototype {
 	pub collision: bool,
-	pub spread: Option<BlockSpreader>,
+	pub spread: Option<BlockSpreaderPrototype>,
 }
 
 impl Prototype for BlockPrototype {
@@ -43,17 +43,17 @@ impl FromLua for BlockPrototype {
 }
 
 #[derive(Debug)]
-pub struct BlockSpreader {
+pub struct BlockSpreaderPrototype {
 	pub chance: f32,
 	pub convert_table: HashMap<Identifier, Identifier>,
 }
 
-impl FromLua for BlockSpreader {
+impl FromLua for BlockSpreaderPrototype {
 	fn from_lua(lua_value: Value, _: &Lua) -> mlua::Result<Self> {
 		trace!("FromLua BlockSpread");
 
 		let table = lua_table(lua_value)?;
-		Ok(BlockSpreader {
+		Ok(BlockSpreaderPrototype {
 			chance: table.get("chance")?,
 			convert_table: table.get("convert_table")?
 		})

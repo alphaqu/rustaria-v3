@@ -1,7 +1,7 @@
 use crate::ty::id::Id;
 use crate::Chunk;
-use crate::chunk::block::BlockPrototype;
-use crate::chunk::layer::BlockLayerPrototype;
+use crate::world::chunk::block::BlockPrototype;
+use crate::world::chunk::layer::BlockLayerPrototype;
 use crate::player::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
 use crate::ty::chunk_pos::ChunkPos;
 use crate::ty::block_pos::BlockPos;
