@@ -57,7 +57,7 @@ impl ClientWorld {
         Some(self.player.get_viewport(frontend))
     }
 
-    pub fn tick(&mut self, frontend: &Frontend, api: &ClientApi, debug: &mut Debug) -> Result<()> {
+    pub fn tick(&mut self, frontend: &Frontend, api: &ClientApi, viewport: &Viewport, debug: &mut Debug) -> Result<()> {
         if let Some(server) = &mut self.integrated {
             server.tick(api)?;
         }
@@ -76,7 +76,7 @@ impl ClientWorld {
                 },
             }
         }
-        self.player.tick(api, &mut self.network, &mut self.world)?;
+        self.player.tick(api, viewport,&mut self.network, &mut self.world)?;
         self.world.tick(api, debug);
         self.renderer
             .tick(frontend, &self.player, &self.world, debug)?;

@@ -27,7 +27,7 @@ impl Luna {
 		searchers.raw_insert(
 			2,
 			lua.create_function(move |lua, mut location: Identifier| {
-				location.namespace.write_str(".lua").map_err(|io| LuaError::external(io))?;
+				location.path.write_str(".lua").map_err(LuaError::external)?;
 				debug!(target: "luna::loading", "Loading {}", location);
 				let data = resources.get_resource(ResourceKind::Source, &location)?;
 				Self::load_inner(lua, &location, &data)?.into_function()
@@ -44,7 +44,7 @@ impl Luna {
 	}
 
 	fn load_inner<'a>(lua: &Lua, name: &Identifier, data: &'a [u8]) -> mlua::Result<Chunk<'a>> {
-		Ok(lua.load(data).set_name(format!("{name}"))?)
+		lua.load(data).set_name(format!("{name}"))
 	}
 }
 

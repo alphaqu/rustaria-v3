@@ -149,6 +149,7 @@ impl PlayerSystem {
     pub fn tick(
         &mut self,
         api: &Api,
+        viewport: &Viewport,
         network: &mut ClientNetwork,
         world: &mut World,
     ) -> Result<()> {
@@ -177,17 +178,10 @@ impl PlayerSystem {
             self.send_command.dir = Vector2D::zero();
 
             {
-                let pos = self
-                    .prediction_world
-                    .storage
-                    .get_comp::<PositionComponent>(entity)
-                    .unwrap()
-                    .pos;
-
                 for press in self.presses.drain(..) {
                     match press {
                         Press::Use(x, y, tile) => {
-                            if let Ok(pos) = BlockPos::try_from(vec2::<_, WS>(x, y) + pos) {
+                            if let Ok(pos) = BlockPos::try_from(vec2::<_, WS>(x, y) + viewport.pos) {
 
                                 world.place_block(api, pos, self.layer_id, tile);
                                 network.send(ServerBoundWorldPacket::SetBlock(pos, self.layer_id, tile))?;

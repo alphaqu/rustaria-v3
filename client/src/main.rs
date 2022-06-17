@@ -124,7 +124,7 @@ impl Client {
     pub fn tick(&mut self) -> Result<()> {
         let start = Instant::now();
         if let Some(world) = &mut self.world {
-            world.tick(&self.frontend, &self.api, &mut self.debug)?
+            world.tick(&self.frontend, &self.api, &self.viewport, &mut self.debug)?
         }
         self.debug.log_tick(start);
         Ok(())
