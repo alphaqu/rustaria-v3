@@ -106,8 +106,8 @@ impl EntityWorld {
 	}
 
 	pub fn tick(&mut self, api: &Api, chunks: &ChunkStorage, debug: &mut impl DebugRendererImpl) {
-		self.humanoid.tick(&mut self.storage);
 		self.gravity.tick(&mut self.storage);
+		self.humanoid.tick(&mut self.storage);
 		self.collision.tick(api, &mut self.storage, chunks, debug);
 		self.velocity.tick(&mut self.storage, debug);
 	}

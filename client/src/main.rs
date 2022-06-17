@@ -76,8 +76,8 @@ impl Client {
         let run_dir = std::env::current_dir().wrap_err("Could not find current directory.")?;
         let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
         let mut debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
-        debug.enable(DebugCategory::TileSpread);
-        debug.enable(DebugCategory::EntityCollision);
+        //debug.enable(DebugCategory::TileSpread);
+        //debug.enable(DebugCategory::EntityCollision);
         //debug.enable(DebugCategory::ChunkMeshing);
         //debug.enable(DebugCategory::ChunkBorders);
 //
@@ -137,7 +137,8 @@ impl Client {
 
         if let Some(world) = &mut self.world {
             if let Some(viewport) = world.get_viewport(&self.frontend) {
-                self.viewport.pos -= ((self.viewport.pos - viewport.pos) * 0.1) * timing.step();
+                self.viewport.pos -= ((self.viewport.pos - viewport.pos) * 0.2) * timing.step();
+                //self.viewport.pos = viewport.pos;
                 self.viewport.zoom = viewport.zoom;
                 self.viewport.recompute_rect(&self.frontend);
             }

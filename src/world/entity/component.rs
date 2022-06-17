@@ -68,5 +68,5 @@ pub struct HumanoidComponent {
 	#[serde(skip)]
 	pub jumped: bool,
 	#[serde(skip)]
-	pub jump_frames_remaining: f32,
+	pub jump_ticks_remaining: u32,
 }

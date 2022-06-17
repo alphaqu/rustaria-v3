@@ -101,11 +101,11 @@ reload.stargate.entity:register {
             size = { 1.8, 2.8 }
         },
         humanoid = {
-            jump_amount = 15.0,
-            jump_speed = 20.0,
-            run_acceleration = 0.12,
-            run_slowdown = 0.2,
-            run_max_speed = 11.0,
+            jump_amount = 15 / 60,
+            jump_speed = 5.01 * 3.0,
+            run_acceleration = 0.08 * 3.0,
+            run_slowdown = 0.2 * 3.0,
+            run_max_speed = 3.0 * 3.0,
         },
         gravity = {
             amount = 1.0
