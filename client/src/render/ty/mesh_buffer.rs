@@ -9,7 +9,7 @@ use glium::index::PrimitiveType;
 use glium::uniforms::Uniforms;
 
 use crate::Frontend;
-use crate::render::builder::MeshBuilder;
+use crate::render::ty::mesh_builder::MeshBuilder;
 
 pub struct MeshDrawer<T: Copy + Vertex> {
     ctx: Rc<glium::backend::Context>,

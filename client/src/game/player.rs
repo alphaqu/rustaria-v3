@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 use euclid::{vec2, Vector2D};
 use eyre::{ContextCompat, Result};
@@ -8,23 +8,22 @@ use tracing::debug;
 
 use rustaria::ty::id::Id;
 use rustaria::ty::identifier::Identifier;
-use rustaria::api::{Api};
-use rustaria::api::prototype::FactoryPrototype;
+use rustaria::api::Api;
 use rustaria::world::chunk::storage::ChunkStorage;
 use rustaria::world::chunk::block::BlockPrototype;
 use rustaria::debug::DummyRenderer;
 use rustaria::world::entity::component::{HumanoidComponent, PositionComponent};
 use rustaria::world::entity::prototype::EntityPrototype;
 use rustaria::world::entity::EntityWorld;
-use rustaria::network::{ClientNetwork};
-use rustaria::network::packet::ServerBoundPacket;
+use rustaria::network::ClientNetwork;
 use rustaria::player::{ClientBoundPlayerPacket, PlayerCommand, ServerBoundPlayerPacket};
 use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::WS;
 use rustaria::world::{ServerBoundWorldPacket, World};
 use rustaria::world::chunk::layer::BlockLayerPrototype;
 
-use crate::{Viewport, Frontend};
+use crate::Frontend;
+use crate::render::ty::viewport::Viewport;
 
 const MAX_CORRECTION: f32 = 0.025;
 
@@ -153,12 +152,12 @@ impl PlayerSystem {
         network: &mut ClientNetwork,
         world: &mut World,
     ) -> Result<()> {
-        self.prediction_world.tick(api, &world.chunk, &mut DummyRenderer);
-        if let Some(entity) = self.check(&world.entity) {
+        self.prediction_world.tick(api, &world.chunks, &mut DummyRenderer);
+        if let Some(entity) = self.check(&world.entities) {
             self.send_command.dir = self.speed.dir;
             self.send_command.jumping = self.jump;
             {
-                let mut component = world.entity
+                let mut component = world.entities
                     .storage
                     .get_mut_comp::<HumanoidComponent>(entity)
                     .unwrap();
@@ -191,7 +190,7 @@ impl PlayerSystem {
                 }
             }
 
-            self.correct_offset(entity, &world.entity);
+            self.correct_offset(entity, &world.entities);
         }
         Ok(())
     }
@@ -204,9 +203,9 @@ impl PlayerSystem {
     ) -> Result<()> {
         match packet {
             ClientBoundPlayerPacket::RespondPos(tick, pos) => {
-                if let Some(entity) = self.check(&world.entity) {
+                if let Some(entity) = self.check(&world.entities) {
                     if let Some(pos) = pos {
-                        world.entity
+                        world.entities
                             .storage
                             .get_mut_comp::<PositionComponent>(entity)
                             .unwrap()
@@ -228,7 +227,7 @@ impl PlayerSystem {
                             entity.dir = speed.dir;
                             entity.jumping = speed.jumping;
                         }
-                        self.base_server_world.tick(api, &world.chunk, &mut DummyRenderer);
+                        self.base_server_world.tick(api, &world.chunks, &mut DummyRenderer);
 
                         // If we reach the tick that we currently received,
                         // stop as the next events are the ones that the server has not yet seen.
@@ -238,13 +237,13 @@ impl PlayerSystem {
                     }
 
                     // Recompile our prediction
-                    self.compile_prediction(api, &world.chunk);
+                    self.compile_prediction(api, &world.chunks);
                 }
             }
             ClientBoundPlayerPacket::Joined(entity) => {
                 debug!("Received joined packet");
                 self.server_player = Some(entity);
-                world.entity.storage.insert(entity, self.player_entity);
+                world.entities.storage.insert(entity, self.player_entity);
                 self.base_server_world
                     .storage
                     .insert(entity, self.player_entity);
@@ -276,8 +275,8 @@ impl PlayerSystem {
                 .unwrap())
     }
 
-    pub fn get_viewport(&self, frontend: &Frontend) -> Viewport {
-        Viewport::new(frontend, self.get_pos(), self.zoom)
+    pub fn get_viewport(&self) -> Viewport {
+        Viewport::new(self.get_pos(), self.zoom)
     }
 
     // If the server says a different value try to correct it without freaking the player out.

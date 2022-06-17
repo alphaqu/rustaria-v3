@@ -1,29 +1,28 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-use euclid::{rect, vec2, Vector2D};
+use euclid::rect;
 use eyre::Result;
-use glium::{uniform, Blend, DrawParameters, Frame, Program};
+use glium::{Blend, DrawParameters, Program, uniform};
 use mlua::LuaSerdeExt;
 
 use layer::BlockLayerRenderer;
 use rustaria::api::registry::MappedRegistry;
 use rustaria::world::chunk::layer::BlockLayerPrototype;
 use rustaria::world::chunk::storage::ChunkStorage;
-use rustaria::world::chunk::{Chunk, CHUNK_SIZE};
+use rustaria::world::chunk::CHUNK_SIZE;
 use rustaria::debug::{DebugCategory, DebugRendererImpl};
 use rustaria::draw_debug;
 use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::chunk_pos::ChunkPos;
-use rustaria::ty::direction::{DirMap, Direction};
-use rustaria::ty::{Offset, WS};
+use rustaria::ty::direction::{Direction, DirMap};
+use rustaria::ty::Offset;
 
 use crate::render::atlas::Atlas;
-use crate::render::buffer::MeshDrawer;
-use crate::render::builder::MeshBuilder;
-use crate::render::draw::Draw;
-use crate::render::PosTexVertex;
-use crate::{ClientApi, Debug, Frontend, PlayerSystem, Viewport};
+use crate::render::ty::mesh_buffer::MeshDrawer;
+use crate::render::ty::mesh_builder::MeshBuilder;
+use crate::render::ty::draw::Draw;
+use crate::render::ty::vertex::PosTexVertex;
+use crate::{ClientApi, Debug, Frontend};
 
 pub mod block;
 pub mod layer;

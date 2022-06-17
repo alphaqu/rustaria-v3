@@ -13,15 +13,18 @@ impl DebugRendererImpl for DummyRenderer {
 }
 
 use bitflags::bitflags;
+use crate::ChunkPos;
+use crate::world::chunk::CHUNK_SIZE_F32;
 
 bitflags! {
     pub struct DebugCategory: u32 {
 		const Tile = 1 << 0;
-		const TileSpread = 1 << 1;
-		const ChunkBorders = 1 << 2;
-		const ChunkMeshing = 1 << 3;
-		const EntityVelocity = 1 << 4;
-		const EntityCollision = 1 << 5;
+		const Temporary = 1 << 1;
+		const TileSpread = 1 << 2;
+		const ChunkBorders = 1 << 3;
+		const ChunkMeshing = 1 << 4;
+		const EntityVelocity = 1 << 5;
+		const EntityCollision = 1 << 6;
     }
 }
 
@@ -38,6 +41,12 @@ pub enum DebugDraw {
 impl From<BlockPos> for DebugDraw {
 	fn from(block: BlockPos) -> Self {
 		DebugDraw::Quad(rect(block.x() as f32, block.y() as f32, 1.0, 1.0))
+	}
+}
+
+impl From<ChunkPos> for DebugDraw {
+	fn from(pos: ChunkPos) -> Self {
+		DebugDraw::Quad(rect(pos.x as f32 * CHUNK_SIZE_F32, pos.y as f32 * CHUNK_SIZE_F32, CHUNK_SIZE_F32, CHUNK_SIZE_F32))
 	}
 }
 

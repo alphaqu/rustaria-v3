@@ -1,27 +1,23 @@
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
 use euclid::{Rect, Vector2D};
 use mlua::{FromLua, Lua, LuaSerdeExt, Value};
 use rustaria::api::prototype::Prototype;
 use rustaria::api::util::lua_table;
 use rustaria::ty::identifier::Identifier;
 
-use crate::{Viewport, ClientApi, Frontend, PlayerSystem};
+use crate::{ClientApi, Frontend, PlayerSystem};
 use rustaria::ty::WS;
 
 use crate::render::atlas::Atlas;
-use crate::render::buffer::MeshDrawer;
-use crate::render::builder::MeshBuilder;
-use crate::render::PosTexVertex;
+use crate::render::ty::mesh_buffer::MeshDrawer;
+use crate::render::ty::mesh_builder::MeshBuilder;
+use crate::render::ty::vertex::PosTexVertex;
 use eyre::Result;
-use glium::{uniform, Blend, DrawParameters, Frame, Program};
-use hecs::Entity;
-use tracing::info;
+use glium::{Blend, DrawParameters, Program, uniform};
 use rustaria::api::registry::MappedRegistry;
 use rustaria::world::entity::component::{PhysicsComponent, PositionComponent, PrototypeComponent};
 use rustaria::world::entity::prototype::EntityPrototype;
 use rustaria::world::entity::EntityWorld;
-use crate::render::draw::Draw;
+use crate::render::ty::draw::Draw;
 
 pub struct WorldEntityRenderer {
     drawer: MeshDrawer<PosTexVertex>,

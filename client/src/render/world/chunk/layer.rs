@@ -1,8 +1,8 @@
 use crate::render::atlas::Atlas;
-use crate::render::builder::MeshBuilder;
+use crate::render::ty::mesh_builder::MeshBuilder;
 use crate::render::world::chunk::block::{BlockRenderer, KindDesc};
 use crate::render::world::neighbor::{NeighborMatrixBuilder, SpriteConnectionKind};
-use crate::render::PosTexVertex;
+use crate::render::ty::vertex::PosTexVertex;
 use crate::{BlockRendererPrototype, ClientApi, Debug};
 use mlua::{FromLua, Function, Lua, LuaSerdeExt, Value};
 use rustaria::api::luna::lib::registry_builder::RegistryBuilder;

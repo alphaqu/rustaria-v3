@@ -34,7 +34,7 @@ impl Atlas {
 	    image_locations: &[Identifier],
     ) -> Result<Atlas> {
         let mut images = HashMap::new();
-        images.insert(Identifier::new("missing"), image::load_from_memory(include_bytes!("./builtin/missing.png"))?);
+        images.insert(Identifier::new("missing"), image::load_from_memory(include_bytes!("../builtin/missing.png"))?);
 
         // Load all images
         for location in image_locations {

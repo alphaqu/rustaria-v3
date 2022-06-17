@@ -1,4 +1,5 @@
-mod quad;
+use std::ops::Add;
+use euclid::Rect;
 
 /// A MeshBuilder constructs a mesh through a series of points.
 /// The vertex data holds the point information and the index data holds the order of the points which may repeat.
@@ -98,3 +99,26 @@ impl<V> Quad<V> for [V; 4] {
 		self
 	}
 }
+
+impl<U, T: Copy + Add<T, Output = T>> Quad<[T; 2]> for Rect<T, U> {
+	fn expand(self) -> [[T; 2]; 4] {
+		[
+			[self.min_x(), self.min_y()],
+			[self.min_x(), self.max_y()],
+			[self.max_x(), self.max_y()],
+			[self.max_x(), self.min_y()],
+		]
+	}
+}
+
+impl<V: Clone> Quad<V> for V {
+	fn expand(self) -> [V; 4] {
+		[
+			self.clone(),
+			self.clone(),
+			self.clone(),
+			self,
+		]
+	}
+}
+

@@ -1,16 +1,17 @@
-use crate::render::buffer::MeshDrawer;
-use crate::render::builder::MeshBuilder;
-use crate::render::PosColorVertex;
-use crate::{Viewport, Frontend};
-use euclid::{rect, vec2, Rect, Vector2D};
+use crate::render::ty::mesh_buffer::MeshDrawer;
+use crate::render::ty::mesh_builder::MeshBuilder;
+use crate::render::ty::viewport::Viewport;
+use crate::Frontend;
+use euclid::{rect, Rect, vec2, Vector2D};
 use eyre::Result;
 use glium::program::SourceCode;
-use glium::{uniform, Blend, DrawParameters, Frame, Program};
+use glium::{Blend, DrawParameters, Frame, Program, uniform};
 use rustaria::debug::{DebugCategory, DebugDraw, DebugEvent, DebugRendererImpl};
 use rustaria::ty::WS;
 use std::time::{Duration, Instant};
 use tracing::info;
 use rustaria::TPS;
+use crate::render::ty::vertex::PosColorVertex;
 
 pub struct Debug {
     program: Program,
@@ -31,11 +32,11 @@ impl Debug {
     pub fn new(frontend: &Frontend) -> Result<Debug> {
         Ok(Debug {
             program: frontend.create_program(SourceCode {
-                vertex_shader: include_str!("render/builtin/pos_color.vert.glsl"),
+                vertex_shader: include_str!("./builtin/pos_color.vert.glsl"),
                 tessellation_control_shader: None,
                 tessellation_evaluation_shader: None,
                 geometry_shader: None,
-                fragment_shader: include_str!("render/builtin/pos_color.frag.glsl"),
+                fragment_shader: include_str!("./builtin/pos_color.frag.glsl"),
             })?,
             drawer: frontend.create_drawer()?,
             builder: MeshBuilder::new(),
@@ -45,7 +46,7 @@ impl Debug {
             tick_times: Default::default(),
             draw_times: Default::default(),
             last_print: Instant::now(),
-            categories: DebugCategory::empty()
+            categories: DebugCategory::Temporary
         })
     }
 
@@ -55,6 +56,7 @@ impl Debug {
 
     pub fn disable(&mut self, kind: DebugCategory) {
         self.categories &= !kind;
+        self.categories |= DebugCategory::Temporary;
     }
 
     pub fn log_event(&mut self, start: Instant) {

@@ -1,6 +1,6 @@
 use glium::Frame;
-use crate::{Viewport, Debug, Frontend, Timing};
 use crate::render::atlas::Atlas;
+use crate::{Debug, Frontend, Timing, Viewport};
 
 pub struct Draw<'frame, 'camera, 'atlas, 'frontend, 'debug, 'timing> {
 	pub frame:    &'frame mut Frame,

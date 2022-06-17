@@ -10,8 +10,8 @@ use rustaria::ty::identifier::Identifier;
 use rustaria::ty::WS;
 use crate::Debug;
 use crate::render::atlas::Atlas;
-use crate::render::builder::MeshBuilder;
-use crate::render::PosTexVertex;
+use crate::render::ty::mesh_builder::MeshBuilder;
+use crate::render::ty::vertex::PosTexVertex;
 use crate::render::world::chunk;
 
 #[derive(Debug)]

@@ -1,20 +1,13 @@
+use glium::{Frame, Program};
 use glium::program::SourceCode;
-use glium::{uniform, Blend, DrawParameters, Frame, Program};
 
-use rustaria::api::registry::MappedRegistry;
-use rustaria::api::Api;
-use rustaria::world::entity::component::{PositionComponent, PrototypeComponent};
-use rustaria::world::entity::prototype::EntityPrototype;
+use chunk::WorldChunkRenderer;
 use rustaria::world::World;
 
+use crate::{ClientApi, Debug, Frontend, PlayerSystem, Timing};
 use crate::render::atlas::Atlas;
-use crate::render::buffer::MeshDrawer;
-use crate::render::builder::MeshBuilder;
-use crate::render::PosTexVertex;
-use crate::{Viewport, ClientApi, Debug, Frontend, PlayerSystem, Timing};
-use chunk::WorldChunkRenderer;
-use entity::EntityRenderer;
-use crate::render::draw::Draw;
+use crate::render::ty::draw::Draw;
+use crate::render::ty::viewport::Viewport;
 use crate::render::world::entity::WorldEntityRenderer;
 
 pub mod chunk;
@@ -48,11 +41,11 @@ impl WorldRenderer {
             pos_color_program: Program::new(
                 &frontend.ctx,
                 SourceCode {
-                    vertex_shader: include_str!("builtin/pos_tex.vert.glsl"),
+                    vertex_shader: include_str!("../builtin/pos_tex.vert.glsl"),
                     tessellation_control_shader: None,
                     tessellation_evaluation_shader: None,
                     geometry_shader: None,
-                    fragment_shader: include_str!("builtin/pos_tex.frag.glsl"),
+                    fragment_shader: include_str!("../builtin/pos_tex.frag.glsl"),
                 },
             )?,
             chunk_renderer: WorldChunkRenderer::new(api, frontend, &atlas)?,
@@ -69,7 +62,7 @@ impl WorldRenderer {
         world: &World,
         debug: &mut Debug,
     ) -> eyre::Result<()> {
-        self.chunk_renderer.tick(&world.chunk)?;
+        self.chunk_renderer.tick(&world.chunks)?;
        // self.entity_renderer.tick(player, &world.entity)?;
         Ok(())
     }
@@ -85,8 +78,8 @@ impl WorldRenderer {
         timing: &Timing,
     ) -> eyre::Result<()> {
         let mut draw = Draw { frame, viewport, atlas: &self.atlas, frontend, debug, timing };
-        self.chunk_renderer.draw(&world.chunk, &self.pos_color_program, &mut draw)?;
-        self.entity_renderer.draw(player, &world.entity, &self.pos_color_program, &mut draw)?;
+        self.chunk_renderer.draw(&world.chunks, &self.pos_color_program, &mut draw)?;
+        self.entity_renderer.draw(player, &world.entities, &self.pos_color_program, &mut draw)?;
         Ok(())
     }
 }

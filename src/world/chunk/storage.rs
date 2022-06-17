@@ -1,28 +1,23 @@
-use std::collections::HashSet;
 use std::collections::hash_set::Iter;
-use std::mem;
+use fxhash::{FxHashMap, FxHashSet};
 use crate::{Chunk, ChunkPos};
 
 #[derive(Clone)]
 pub struct ChunkStorage {
 	width: u32,
 	height: u32,
-	chunks: Vec<Chunk>,
-	dirty: HashSet<ChunkPos>,
+	chunks: FxHashMap<ChunkPos, Chunk>,
+	dirty: FxHashSet<ChunkPos>,
 }
 
 impl ChunkStorage {
-	pub fn new(width: u32, height: u32, chunks: Vec<Chunk>) -> Option<ChunkStorage> {
-		if width  as usize * height as usize != chunks.len() {
-			return None;
-		}
-
-		Some(ChunkStorage {
+	pub fn new(width: u32, height: u32) -> ChunkStorage {
+		ChunkStorage {
 			width,
 			height,
-			chunks,
+			chunks: Default::default(),
 			dirty: Default::default()
-		})
+		}
 	}
 
 	pub fn width(&self) -> u32 {
@@ -34,21 +29,36 @@ impl ChunkStorage {
 	}
 
 	pub fn get(&self, pos: ChunkPos) -> Option<&Chunk> {
-		let idx = self.get_idx(pos)?;
-		Some(&self.chunks[idx])
+		if !self.check_inbounds(pos) {
+			return None;
+		}
+
+		self.chunks.get(&pos)
+	}
+	
+	pub fn contains(&self, pos: ChunkPos) -> bool {
+		if !self.check_inbounds(pos) {
+			return false;
+		}
+		
+		self.chunks.contains_key(&pos)
 	}
 
 	pub fn get_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
-		let idx = self.get_idx(pos)?;
+		if !self.check_inbounds(pos) {
+			return None;
+		}
+
 		self.dirty.insert(pos);
-		Some(&mut self.chunks[idx])
+		self.chunks.get_mut(&pos)
 	}
 
-	pub fn insert(&mut self, pos: ChunkPos, mut chunk: Chunk) -> Option<Chunk> {
-		let idx = self.get_idx(pos)?;
-		mem::swap(&mut self.chunks[idx], &mut chunk);
-		self.dirty.insert(pos);
-		Some(chunk)
+	pub fn insert(&mut self, pos: ChunkPos, chunk: Chunk) -> Option<Chunk> {
+		if !self.check_inbounds(pos) {
+			return None;
+		}
+
+		self.chunks.insert(pos, chunk)
 	}
 
 	pub fn get_dirty(&self) -> Iter<'_, ChunkPos> {
@@ -59,12 +69,9 @@ impl ChunkStorage {
 		self.dirty.clear();
 	}
 
-	fn get_idx(&self, pos: ChunkPos) -> Option<usize> {
-		if pos.x >= self.width || pos.y >= self.height	{
-			return None;
-		}
-
-		Some(pos.x as usize  + (pos.y as usize * self.width as usize))
+	#[inline(always)]
+	fn check_inbounds(&self, pos: ChunkPos) -> bool {
+		pos.x < self.width && pos.y < self.height
 	}
 }
 

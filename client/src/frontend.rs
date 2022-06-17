@@ -12,7 +12,7 @@ use glium::debug::{DebugCallbackBehavior, Severity};
 use glium::program::SourceCode;
 use image::imageops::FilterType;
 use tracing::{event, Level};
-use crate::render::buffer::MeshDrawer;
+use crate::render::ty::mesh_buffer::MeshDrawer;
 
 pub struct Frontend {
     glfw: Glfw,
@@ -29,6 +29,7 @@ impl Frontend {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS)?;
         glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
         glfw.window_hint(WindowHint::ContextVersion(4, 6));
+        glfw.window_hint(WindowHint::Samples(None));
 
         let (mut window, events) = glfw
             .create_window(900, 600, "Rustaria", WindowMode::Windowed)
@@ -44,7 +45,8 @@ impl Frontend {
         window.set_mouse_button_polling(true);
         window.set_framebuffer_size_polling(true);
 
-        let icon = image::load_from_memory(include_bytes!("./render/builtin/icon.png"))?;
+
+        let icon = image::load_from_memory(include_bytes!("./builtin/icon.png"))?;
         window.set_icon(vec![
             icon.resize(16, 16, FilterType::Lanczos3).to_rgba8(),
             icon.resize(32, 32, FilterType::Lanczos3).to_rgba8(),

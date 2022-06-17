@@ -1,18 +1,16 @@
-use std::collections::HashMap;
+use eyre::Result;
 use rand::{Rng, SeedableRng};
-use rand_xoshiro::Xoroshiro64Star;
-use crate::{Api, Chunk, ChunkPos, ChunkStorage, draw_debug, EntityWorld, packet, ServerNetwork, TPS};
-use crate::api::prototype::FactoryPrototype;
-use crate::api::registry::MappedRegistry;
-use chunk::block::{BlockPrototype, BlockSpreaderPrototype};
+
+use chunk::block::BlockPrototype;
 use chunk::layer::BlockLayerPrototype;
-use crate::debug::{DebugCategory, DebugRendererImpl};
+
+use crate::{Api, Chunk, ChunkPos, ChunkStorage, EntityWorld, packet, ServerNetwork};
+use crate::api::prototype::FactoryPrototype;
+use crate::debug::DebugRendererImpl;
 use crate::network::Token;
 use crate::ty::block_pos::BlockPos;
-use crate::ty::direction::Direction;
 use crate::ty::id::Id;
 use crate::ty::Offset;
-use eyre::Result;
 use crate::world::spread::Spreader;
 
 pub mod chunk;
@@ -33,8 +31,8 @@ pub enum ClientBoundWorldPacket {
 }
 
 pub struct World {
-	pub chunk: ChunkStorage,
-	pub entity: EntityWorld,
+	pub chunks: ChunkStorage,
+	pub entities: EntityWorld,
 
 	spreader: Spreader,
 }
@@ -42,42 +40,22 @@ pub struct World {
 impl World {
 	pub fn new(api: &Api, chunk: ChunkStorage) -> Result<World> {
 		Ok(World {
-			chunk,
-			entity: EntityWorld::new(api)?,
+			chunks: chunk,
+			entities: EntityWorld::new(api)?,
 			spreader: Spreader::new(api)
 		})
 	}
 
 	pub fn tick(&mut self, api: &Api, debug: &mut impl DebugRendererImpl) {
-		for (pos, layer_id,block_id) in self.spreader.tick(&mut self.chunk, debug) {
+		for (pos, layer_id,block_id) in self.spreader.tick(&mut self.chunks, debug) {
 			self.place_block(api, pos, layer_id, block_id);
 		};
 		// Entity
-		self.entity.tick(api, &self.chunk, debug);
-	}
-
-	pub fn packet(
-		&mut self,
-		api: &Api,
-		token: Token,
-		packet: ServerBoundWorldPacket,
-		network: &mut ServerNetwork,
-	) -> Result<()> {
-		match packet {
-			ServerBoundWorldPacket::RequestChunk(chunk_pos) => {
-				if let Some(chunk) = self.chunk.get(chunk_pos) {
-					network.send(token, ClientBoundWorldPacket::Chunk(chunk_pos, chunk.clone()))?;
-				}
-			}
-			ServerBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
-				self.place_block(api, pos, layer_id, block_id);
-			}
-		}
-		Ok(())
+		self.entities.tick(api, &self.chunks, debug);
 	}
 
 	pub fn place_block(&mut self, api: &Api, pos: BlockPos, layer_id: Id<BlockLayerPrototype>, block_id: Id<BlockPrototype>) {
-		if let Some(chunk) = self.chunk.get_mut(pos.chunk) {
+		if let Some(chunk) = self.chunks.get_mut(pos.chunk) {
 			// Layer
 			let layer = chunk.layers.get_mut(layer_id);
 			let prototype = api.carrier.block_layer.get(layer_id);
@@ -88,5 +66,25 @@ impl World {
 
 			self.spreader.place_block(pos, layer_id, block_id);
 		}
+	}
+
+	pub(crate) fn packet(
+		&mut self,
+		api: &Api,
+		token: Token,
+		packet: ServerBoundWorldPacket,
+		network: &mut ServerNetwork,
+	) -> Result<()> {
+		match packet {
+			ServerBoundWorldPacket::RequestChunk(chunk_pos) => {
+				if let Some(chunk) = self.chunks.get(chunk_pos) {
+					network.send(token, ClientBoundWorldPacket::Chunk(chunk_pos, chunk.clone()))?;
+				}
+			}
+			ServerBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
+				self.place_block(api, pos, layer_id, block_id);
+			}
+		}
+		Ok(())
 	}
 }

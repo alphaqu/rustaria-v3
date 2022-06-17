@@ -12,6 +12,9 @@ eyre = "0.6.8"
 color-eyre = { version = "0.6.1", features = ["capture-spantrace"] }
 hecs = "0.7.6"
 
+fxhash = "0.2.1"
+
+
 glfw = { version  = "0.45.0", features = ["image"] }
 euclid = "0.22.7"
 

@@ -1,51 +1,52 @@
-use crate::render::draw::Draw;
+use crate::game::world::ClientWorld;
+use crate::render::ty::viewport::Viewport;
 use crate::render::world::WorldRenderer;
-use crate::{Viewport, ClientApi, Debug, Frontend, PlayerSystem, Timing};
+use crate::{ClientApi, Debug, Frontend, PlayerSystem, Timing};
 use eyre::{Result, WrapErr};
 use glfw::WindowEvent;
 use glium::Frame;
-use rustaria::api::{Api, Resources};
-use rustaria::world::chunk::storage::ChunkStorage;
-use rustaria::world::chunk::{BlockLayer, Chunk};
-use rustaria::world::entity::EntityWorld;
 use rustaria::network::packet::ClientBoundPacket;
 use rustaria::network::{new_networking, ClientNetwork};
 use rustaria::player::ServerBoundPlayerPacket;
+use rustaria::world::chunk::storage::ChunkStorage;
 use rustaria::world::{ClientBoundWorldPacket, World};
 use rustaria::Server;
 
 pub mod player;
+mod world;
 
 /// This exists when a client has joined a world.
-pub struct ClientWorld {
+pub struct ClientGame {
     integrated: Option<Server>,
 
     network: ClientNetwork,
     player: PlayerSystem,
-    world: World,
+    world: ClientWorld,
 
     renderer: WorldRenderer,
 }
 
-impl ClientWorld {
+impl ClientGame {
     pub fn new_integrated(
         frontend: &Frontend,
         api: &ClientApi,
         world: World,
-    ) -> Result<ClientWorld> {
+    ) -> Result<ClientGame> {
         let (network, server_network) = new_networking();
         // Send join packet
         network.send(ServerBoundPlayerPacket::Join())?;
 
-        let storage = world.chunk.clone();
-        Ok(ClientWorld {
+        Ok(ClientGame {
+            network,
+            player: PlayerSystem::new(api)?,
+            world: ClientWorld::new(World::new(
+                api,
+                ChunkStorage::new(world.chunks.width(), world.chunks.height()),
+            )?),
+            renderer: WorldRenderer::new(frontend, api)?,
             integrated: Some(
                 Server::new(api, server_network, world).wrap_err("Failed to start server")?,
             ),
-            network,
-            player: PlayerSystem::new(api)?,
-            world: World::new(api, storage)?,
-            renderer: WorldRenderer::new(frontend, api)?,
         })
     }
 
@@ -53,11 +54,17 @@ impl ClientWorld {
         self.player.event(event, frontend);
     }
 
-    pub fn get_viewport(&mut self, frontend: &Frontend) -> Option<Viewport> {
-        Some(self.player.get_viewport(frontend))
+    pub fn get_viewport(&mut self) -> Option<Viewport> {
+        Some(self.player.get_viewport())
     }
 
-    pub fn tick(&mut self, frontend: &Frontend, api: &ClientApi, viewport: &Viewport, debug: &mut Debug) -> Result<()> {
+    pub fn tick(
+        &mut self,
+        frontend: &Frontend,
+        api: &ClientApi,
+        viewport: &Viewport,
+        debug: &mut Debug,
+    ) -> Result<()> {
         if let Some(server) = &mut self.integrated {
             server.tick(api)?;
         }
@@ -66,21 +73,18 @@ impl ClientWorld {
                 ClientBoundPacket::Player(packet) => {
                     self.player.packet(api, packet, &mut self.world)?;
                 }
-                ClientBoundPacket::World(packet) => match packet {
-                    ClientBoundWorldPacket::Chunk(pos, chunk) => {
-                        self.world.chunk.insert(pos, chunk);
-                    }
-                    ClientBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
-                        self.world.place_block(api, pos, layer_id, block_id);
-                    }
+                ClientBoundPacket::World(packet) => {
+                    self.world.packet(api, packet, debug)?;
                 },
             }
         }
-        self.player.tick(api, viewport,&mut self.network, &mut self.world)?;
-        self.world.tick(api, debug);
+        self.player
+            .tick(api, viewport, &mut self.network, &mut self.world)?;
+        self.world
+            .tick_client(api, &self.player, &mut self.network, debug)?;
         self.renderer
             .tick(frontend, &self.player, &self.world, debug)?;
-        self.world.chunk.reset_dirty();
+        self.world.chunks.reset_dirty();
         Ok(())
     }
 
@@ -92,7 +96,15 @@ impl ClientWorld {
         debug: &mut Debug,
         timing: &Timing,
     ) -> Result<()> {
-        self.renderer.draw(frontend, &self.player, &self.world, frame, viewport, debug, timing)?;
+        self.renderer.draw(
+            frontend,
+            &self.player,
+            &self.world,
+            frame,
+            viewport,
+            debug,
+            timing,
+        )?;
         Ok(())
     }
 }

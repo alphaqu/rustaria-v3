@@ -5,44 +5,40 @@ extern crate core;
 
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
-use euclid::{vec2, Vector2D};
+
+use euclid::vec2;
 use eyre::{Context, Result};
 use glfw::{Key, WindowEvent};
 use glium::Surface;
-use rustaria::api::Api;
-use tracing::info;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::fmt;
 use tracing_subscriber::fmt::format;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use crate::frontend::Frontend;
 use debug::Debug;
-use rustaria::api::luna::lib::reload::Reload;
-use rustaria::api::luna::lib::stargate::Stargate;
-use rustaria::api::registry::Registry;
-use crate::render::Viewport;
-use crate::world::ClientWorld;
+use render::ty::viewport::Viewport;
+use rustaria::TPS;
+use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::identifier::Identifier;
-use rustaria::world::chunk::storage::ChunkStorage;
 use rustaria::world::chunk::{Chunk, ChunkLayer};
-use rustaria::debug::{DebugCategory, DebugRendererImpl};
-use rustaria::{draw_debug, TPS};
+use rustaria::world::chunk::storage::ChunkStorage;
 use rustaria::world::World;
-use world::player::PlayerSystem;
+
 use crate::api::ClientApi;
-use crate::render::draw::Draw;
+use crate::frontend::Frontend;
 use crate::render::world::chunk::block::BlockRendererPrototype;
 use crate::render::world::chunk::layer::BlockLayerRendererPrototype;
-use crate::timing::Timing;
+use crate::ty::Timing;
+use crate::game::ClientGame;
+use crate::game::player::PlayerSystem;
 
 mod frontend;
 mod render;
-mod world;
+mod game;
 pub mod debug;
 pub mod api;
-mod timing;
+mod ty;
 
 const TICK_DURATION: Duration = Duration::from_nanos((1000000000 / TPS) as u64);
 
@@ -66,7 +62,7 @@ fn main() -> Result<()> {
 pub struct Client {
     viewport: Viewport,
     debug: Debug,
-    world: Option<ClientWorld>,
+    game: Option<ClientGame>,
     api: ClientApi,
     frontend: Frontend,
 }
@@ -83,10 +79,10 @@ impl Client {
 //
         Ok(Client {
             api: ClientApi::new(run_dir, vec![PathBuf::from("../plugin")])?,
-            viewport: Viewport::new(&frontend, vec2(0.0, 0.0), 1.0),
+            viewport: Viewport::new(vec2(0.0, 0.0), 1.0),
             debug,
             frontend,
-            world: None,
+            game: None,
         })
     }
 
@@ -111,9 +107,9 @@ impl Client {
         for event in self.frontend.poll_events() {
             if let WindowEvent::Key(Key::O, _, _, _) = event {
                 self.api.reload()?;
-                self.world = Some(self.join_world()?);
+                self.game = Some(self.join_world()?);
             }
-            if let Some(world) = &mut self.world {
+            if let Some(world) = &mut self.game {
                 world.event(&self.frontend, event);
             }
         }
@@ -123,7 +119,7 @@ impl Client {
 
     pub fn tick(&mut self) -> Result<()> {
         let start = Instant::now();
-        if let Some(world) = &mut self.world {
+        if let Some(world) = &mut self.game {
             world.tick(&self.frontend, &self.api, &self.viewport, &mut self.debug)?
         }
         self.debug.log_tick(start);
@@ -135,12 +131,12 @@ impl Client {
         let mut frame = self.frontend.start_draw();
         frame.clear_color(0.10, 0.10, 0.10, 1.0);
 
-        if let Some(world) = &mut self.world {
-            if let Some(viewport) = world.get_viewport(&self.frontend) {
+        if let Some(world) = &mut self.game {
+            if let Some(viewport) = world.get_viewport() {
                 self.viewport.pos -= ((self.viewport.pos - viewport.pos) * 0.2) * timing.step();
                 //self.viewport.pos = viewport.pos;
                 self.viewport.zoom = viewport.zoom;
-                self.viewport.recompute_rect(&self.frontend);
+                self.viewport.recompute_rect(Some(&self.frontend));
             }
 
 
@@ -152,11 +148,15 @@ impl Client {
         Ok(())
     }
 
-    pub fn join_world(&self) -> Result<ClientWorld> {
-        let mut out = Vec::new();
+    pub fn join_world(&self) -> Result<ClientGame> {
+        let mut storage = ChunkStorage::new(9, 9);
+
         for y in 0..9 {
             for x in 0..9 {
-                out.push(Chunk {
+                storage.insert(ChunkPos {
+                    x: x as u32,
+                    y: y as u32,
+                }, Chunk {
                     layers: self.api.carrier.block_layer.map(|_, id, prototype| {
                         let dirt = prototype.registry.create(
                             prototype
@@ -204,11 +204,10 @@ impl Client {
                 });
             }
         }
-
-        ClientWorld::new_integrated(
+        ClientGame::new_integrated(
             &self.frontend,
             &self.api,
-            World::new(&self.api, ChunkStorage::new(9, 9, out).unwrap()).unwrap(),
+            World::new(&self.api, storage).unwrap(),
         )
     }
 }
