@@ -5,7 +5,7 @@ use crate::Frontend;
 
 #[derive(Copy, Clone)]
 pub struct Viewport {
-	pub pos:  Vector2D<f32, WS>,
+	pub pos: Vector2D<f32, WS>,
 	pub zoom: f32,
 	pub rect: Rect<f32, WS>,
 }

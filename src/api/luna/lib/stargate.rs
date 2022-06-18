@@ -15,14 +15,14 @@ use crate::{
 
 /// Creates a carrier
 pub struct Stargate {
-	pub start:    Instant,
+	pub start: Instant,
 	pub builders: HashMap<String, LuaRegistryBuilder>,
 }
 
 impl Stargate {
 	pub fn new() -> Stargate {
 		Stargate {
-			start:    Instant::now(),
+			start: Instant::now(),
 			builders: Default::default(),
 		}
 	}
@@ -37,12 +37,11 @@ impl Stargate {
 	pub fn build_registry<P: Prototype>(
 		&mut self,
 		lua: &Lua,
-		hasher: &mut Hasher,
 	) -> eyre::Result<Registry<P>> {
 		self.builders
 			.remove(P::get_name())
 			.expect("Registry unregistered")
-			.build(lua, hasher)
+			.build(lua)
 			.wrap_err_with(|| format!("Failed to create registry for {}s", P::get_name()))
 	}
 }

@@ -16,10 +16,10 @@ use tracing::{error, trace, warn};
 use crate::Frontend;
 
 pub struct Atlas {
-	pub width:   u32,
-	pub height:  u32,
+	pub width: u32,
+	pub height: u32,
 	pub texture: glium::texture::SrgbTexture2d,
-	lookup:      HashMap<Identifier, Rect<f32, Atlas>>,
+	lookup: HashMap<Identifier, Rect<f32, Atlas>>,
 }
 
 impl Atlas {

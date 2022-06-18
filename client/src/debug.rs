@@ -21,37 +21,37 @@ use crate::{
 pub struct Debug {
 	program: Program,
 	builder: MeshBuilder<PosColorVertex>,
-	drawer:  MeshDrawer<PosColorVertex>,
-	events:  Vec<DebugEvent>,
+	drawer: MeshDrawer<PosColorVertex>,
+	events: Vec<DebugEvent>,
 
 	tick_event_times: Vec<Duration>,
-	tick_times:       Vec<Duration>,
-	draw_times:       Vec<Duration>,
-	last_print:       Instant,
+	tick_times: Vec<Duration>,
+	draw_times: Vec<Duration>,
+	last_print: Instant,
 
-	line_size:  f32,
+	line_size: f32,
 	categories: DebugCategory,
 }
 
 impl Debug {
 	pub fn new(frontend: &Frontend) -> Result<Debug> {
 		Ok(Debug {
-			program:          frontend.create_program(SourceCode {
+			program: frontend.create_program(SourceCode {
 				vertex_shader: include_str!("./builtin/pos_color.vert.glsl"),
 				tessellation_control_shader: None,
 				tessellation_evaluation_shader: None,
 				geometry_shader: None,
 				fragment_shader: include_str!("./builtin/pos_color.frag.glsl"),
 			})?,
-			drawer:           frontend.create_drawer()?,
-			builder:          MeshBuilder::new(),
-			line_size:        0.1,
-			events:           vec![],
+			drawer: frontend.create_drawer()?,
+			builder: MeshBuilder::new(),
+			line_size: 0.1,
+			events: vec![],
 			tick_event_times: Default::default(),
-			tick_times:       Default::default(),
-			draw_times:       Default::default(),
-			last_print:       Instant::now(),
-			categories:       DebugCategory::Temporary,
+			tick_times: Default::default(),
+			draw_times: Default::default(),
+			last_print: Instant::now(),
+			categories: DebugCategory::Temporary,
 		})
 	}
 

@@ -6,7 +6,7 @@ use crate::api::luna::glue::LuaGlue;
 
 pub struct GlueUserDataMethods<'a, V: UserData, F: UserDataMethods<LuaGlue<V>>> {
 	pub(crate) methods: &'a mut F,
-	pub(crate) data:    PhantomData<V>,
+	pub(crate) data: PhantomData<V>,
 }
 
 impl<'a, V: UserData, I: UserDataMethods<LuaGlue<V>>> UserDataMethods<V>

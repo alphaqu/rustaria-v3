@@ -74,8 +74,6 @@ local wall_rect_pos_lookup = {
     ["CornerDownRight"] = { 0, -0.5 },
 };
 
-rustaria_hello = 69;
-
 return {
     ["tile"] =  {
         get_rect = function(kind)

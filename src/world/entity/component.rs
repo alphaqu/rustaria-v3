@@ -46,7 +46,7 @@ pub struct GravityComponent {
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct PhysicsComponent {
-	pub vel:   Vector2D<f32, WS>,
+	pub vel: Vector2D<f32, WS>,
 	pub accel: Vector2D<f32, WS>,
 }
 
@@ -61,18 +61,20 @@ pub struct PositionComponent {
 pub struct CollisionComponent {
 	pub collision_box: Rect<f32, WS>,
 	#[serde(skip)]
-	pub collided:      DirMap<bool>,
+	pub collided: DirMap<bool>,
+	#[serde(skip)]
+	pub collisions: Vec<(Rect<f32, WS>, f32)>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct HumanoidComponent {
 	// Settings
 	pub jump_amount: f32,
-	pub jump_speed:  f32,
+	pub jump_speed: f32,
 
 	pub run_acceleration: f32,
-	pub run_slowdown:     f32,
-	pub run_max_speed:    f32,
+	pub run_slowdown: f32,
+	pub run_max_speed: f32,
 
 	// Runtime stuff
 	#[serde(skip)]

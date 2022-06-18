@@ -55,7 +55,7 @@ impl CollisionSystem {
 			);
 			draw_debug!(debug, DebugCategory::EntityCollision, old_rect, 0xfcfcfa);
 
-			let mut collisions = Vec::new();
+			collision.collisions.clear();
 			for x in x1..x2 {
 				for y in y1..y2 {
 					let pos = vec2(x as f32, y as f32);
@@ -68,7 +68,7 @@ impl CollisionSystem {
 									continue;
 								}
 								let tile = Rect::new(pos.to_point(), Size2D::new(1.0, 1.0));
-								test_collision(physics.vel, old_rect, tile, &mut collisions, debug);
+								test_collision(physics.vel, old_rect, tile, &mut collision.collisions, debug);
 							}
 						}
 					}
@@ -82,41 +82,41 @@ impl CollisionSystem {
 				physics.vel,
 				old_rect,
 				rect(0.0, -1.0, w, 1.0),
-				&mut collisions,
+				&mut collision.collisions,
 				debug,
 			);
 			test_collision(
 				physics.vel,
 				old_rect,
 				rect(-1.0, 0.0, 1.0, h),
-				&mut collisions,
+				&mut collision.collisions,
 				debug,
 			);
 			test_collision(
 				physics.vel,
 				old_rect,
 				rect(w, 0.0, 1.0, h),
-				&mut collisions,
+				&mut collision.collisions,
 				debug,
 			);
 			test_collision(
 				physics.vel,
 				old_rect,
 				rect(0.0, h, w, 1.0),
-				&mut collisions,
+				&mut collision.collisions,
 				debug,
 			);
 
-			collisions.sort_by(|v0, v1| v0.1.total_cmp(&v1.1));
+			collision.collisions.sort_unstable_by(|v0, v1| v0.1.total_cmp(&v1.1));
 
-			for (pos, _) in collisions {
+			for (pos, _) in &mut collision.collisions {
 				if let Some(Some((d, contact))) =
-					aabb::resolve_dynamic_rect_vs_rect(physics.vel, old_rect, 1.0, pos)
+					aabb::resolve_dynamic_rect_vs_rect(physics.vel, old_rect, 1.0, *pos)
 				{
 					draw_debug!(
 						debug,
 						DebugCategory::EntityCollision,
-						pos,
+						*pos,
 						0xc1c0c0,
 						1.0,
 						1.0

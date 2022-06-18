@@ -6,5 +6,5 @@ where
 {
 	type Output;
 	fn get_name() -> &'static str;
-	fn from_lua(table: LunaTable, hasher: &mut Hasher) -> eyre::Result<Self>;
+	fn from_lua(table: LunaTable) -> eyre::Result<Self>;
 }

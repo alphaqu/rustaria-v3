@@ -24,14 +24,14 @@ impl<V: UserData> ToGlue for V {
 
 #[derive(Clone)]
 pub struct Glue<'a, V: UserData> {
-	raw:    LuaGlue<V>,
+	raw: LuaGlue<V>,
 	_value: PhantomData<&'a mut V>,
 }
 
 impl<'a, V: UserData> Glue<'a, V> {
 	pub fn new(data: &'a mut V) -> Glue<'a, V> {
 		Glue {
-			raw:    LuaGlue { value: data },
+			raw: LuaGlue { value: data },
 			_value: PhantomData::default(),
 		}
 	}

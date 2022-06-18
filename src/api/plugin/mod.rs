@@ -8,9 +8,9 @@ use crate::api::plugin::archive::Archive;
 mod archive;
 
 pub struct Plugin {
-	pub id:       String,
+	pub id: String,
 	pub manifest: Manifest,
-	pub archive:  Archive,
+	pub archive: Archive,
 }
 
 impl Plugin {
@@ -37,18 +37,18 @@ pub struct Manifest {
 
 	// metadata
 	pub dependencies: Option<HashMap<String, VersionReq>>,
-	pub breaks:       Option<HashMap<String, VersionReq>>,
-	pub supports:     Option<HashMap<String, VersionReq>>,
+	pub breaks: Option<HashMap<String, VersionReq>>,
+	pub supports: Option<HashMap<String, VersionReq>>,
 }
 
 #[derive(serde::Deserialize, PartialEq, Debug)]
 pub struct ManifestPlugin {
-	pub name:    String,
-	pub id:      String,
+	pub name: String,
+	pub id: String,
 	pub version: Version,
 
-	pub license:      Option<String>,
-	pub author:       Option<String>,
+	pub license: Option<String>,
+	pub author: Option<String>,
 	pub contributors: Option<Vec<String>>,
 }
 
@@ -74,20 +74,20 @@ mod tests {
 		assert_eq!(
 			manifest,
 			Manifest {
-				plugin:       ManifestPlugin {
-					name:         "Rustaria".to_string(),
-					id:           "rustaria".to_string(),
-					version:      Version::new(0, 0, 1),
-					license:      None,
-					author:       None,
+				plugin: ManifestPlugin {
+					name: "Rustaria".to_string(),
+					id: "rustaria".to_string(),
+					version: Version::new(0, 0, 1),
+					license: None,
+					author: None,
 					contributors: None,
 				},
 				dependencies: Some(HashMap::from([(
 					"rustaria-graphics".to_string(),
 					VersionReq::parse("0.0.69").unwrap()
 				)])),
-				breaks:       None,
-				supports:     None,
+				breaks: None,
+				supports: None,
 			}
 		);
 		Ok(())

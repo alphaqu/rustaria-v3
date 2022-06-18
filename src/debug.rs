@@ -33,7 +33,7 @@ pub enum DebugDraw {
 	Quad(Rect<f32, WS>),
 	Line {
 		start: Vector2D<f32, WS>,
-		stop:  Vector2D<f32, WS>,
+		stop: Vector2D<f32, WS>,
 	},
 	Point(Vector2D<f32, WS>),
 }

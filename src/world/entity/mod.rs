@@ -1,8 +1,5 @@
 use eyre::Result;
-use hecs::{
-	Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref,
-	RefMut, TakenEntity,
-};
+use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityBuilderClone, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
 
 use crate::{
 	api::Api,
@@ -17,6 +14,7 @@ use crate::{
 	},
 	ChunkStorage,
 };
+use crate::world::entity::component::PrototypeComponent;
 
 pub mod component;
 pub mod prototype;
@@ -77,24 +75,35 @@ impl EntityStorage {
 
 		Some(builder)
 	}
+
+	pub fn clone_to(&self, from: Entity, to: Entity, to_storage: &mut EntityStorage) -> Option<()> {
+		let entity = self.world.entity(from).ok()?;
+		iter_components!({
+			if let Some(component) = entity.get::<T>() {
+				to_storage.world.insert_one(to,  (*component).clone()).ok()?;
+			}
+		});
+
+		Some(())
+	}
 }
 
 pub struct EntityWorld {
 	pub storage: EntityStorage,
-	velocity:    VelocitySystem,
-	gravity:     GravitySystem,
-	collision:   CollisionSystem,
-	humanoid:    HumanoidSystem,
+	velocity: VelocitySystem,
+	gravity: GravitySystem,
+	collision: CollisionSystem,
+	humanoid: HumanoidSystem,
 }
 
 impl EntityWorld {
 	pub fn new(api: &Api) -> Result<EntityWorld> {
 		Ok(EntityWorld {
-			storage:   EntityStorage::new(),
-			velocity:  VelocitySystem,
-			gravity:   GravitySystem,
+			storage: EntityStorage::new(),
+			velocity: VelocitySystem,
+			gravity: GravitySystem,
 			collision: CollisionSystem,
-			humanoid:  HumanoidSystem,
+			humanoid: HumanoidSystem,
 		})
 	}
 

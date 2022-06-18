@@ -1,9 +1,11 @@
 use std::{any::Any, marker::PhantomData};
+use std::any::type_name;
 
 use apollo::*;
 use eyre::{Context, Report};
 use fxhash::FxHashMap;
 use mlua::{prelude::LuaResult, FromLua, Lua, Table, Value};
+use tracing::trace;
 
 use crate::{
 	api::{luna::table::LunaTable, prototype::Prototype, registry::Registry, util::lua_table},
@@ -15,14 +17,14 @@ const DEFAULT_PRIORITY: f32 = 69420.0;
 
 pub struct RegistryBuilder<P: Prototype> {
 	tables: Vec<Table>,
-	_p:     PhantomData<P>,
+	_p: PhantomData<P>,
 }
 
 impl<P: Prototype> RegistryBuilder<P> {
 	pub fn new() -> RegistryBuilder<P> {
 		RegistryBuilder {
 			tables: vec![],
-			_p:     Default::default(),
+			_p: Default::default(),
 		}
 	}
 
@@ -31,24 +33,24 @@ impl<P: Prototype> RegistryBuilder<P> {
 		Ok(())
 	}
 
-	pub fn build(&mut self, lua: &Lua, hasher: &mut Hasher) -> eyre::Result<Registry<P>> {
+	pub fn build(&mut self, lua: &Lua) -> eyre::Result<Registry<P>> {
 		let mut values = FxHashMap::default();
 		for table in &self.tables {
 			for value in table.clone().pairs::<Value, Value>() {
 				let (key, value) = value?;
 				let (identifier, priority) = Self::get_prototype_entry_key(lua, key)
 					.wrap_err("Failed to get registry entry key.")?;
-				let prototype = Self::get_prototype(lua, hasher, value)
+				let prototype = Self::get_prototype(lua, value)
 					.wrap_err_with(|| format!("Failed to create prototype {}", identifier))?;
 				values.insert(identifier, (priority, prototype));
 			}
 		}
-		Ok(Registry::new(values, hasher))
+		Ok(Registry::new(values))
 	}
 
-	fn get_prototype(lua: &Lua, hasher: &mut Hasher, value: Value) -> eyre::Result<P> {
+	fn get_prototype(lua: &Lua, value: Value) -> eyre::Result<P> {
 		let table = lua_table(value)?;
-		let prototype = P::from_lua(LunaTable { lua, table }, hasher)?;
+		let prototype = P::from_lua(LunaTable { lua, table })?;
 		Ok(prototype)
 	}
 
@@ -72,7 +74,7 @@ impl<P: Prototype> RegistryBuilder<P> {
 
 pub trait DynRegistryBuilder {
 	fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()>;
-	fn build(&mut self, lua: &Lua, hasher: &mut Hasher) -> Box<dyn Any>;
+	fn build(&mut self, lua: &Lua) -> Box<dyn Any>;
 }
 
 impl<P: Prototype> DynRegistryBuilder for RegistryBuilder<P> {
@@ -80,8 +82,8 @@ impl<P: Prototype> DynRegistryBuilder for RegistryBuilder<P> {
 		self.register(lua, value)
 	}
 
-	fn build(&mut self, lua: &Lua, hasher: &mut Hasher) -> Box<dyn Any> {
-		Box::new(self.build(lua, hasher))
+	fn build(&mut self, lua: &Lua) -> Box<dyn Any> {
+		Box::new(self.build(lua))
 	}
 }
 
@@ -99,11 +101,10 @@ impl LuaRegistryBuilder {
 	pub fn build<P: Prototype>(
 		mut self,
 		lua: &Lua,
-		hasher: &mut Hasher,
 	) -> eyre::Result<Registry<P>> {
 		*self
 			.inner
-			.build(lua, hasher)
+			.build(lua)
 			.downcast::<eyre::Result<Registry<P>>>()
 			.expect("we fucked up hard with downcasting here")
 	}

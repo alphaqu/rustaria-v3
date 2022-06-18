@@ -12,14 +12,14 @@ use crate::{
 };
 
 pub struct SpreaderSystem {
-	rand:           Xoroshiro64Star,
+	rand: Xoroshiro64Star,
 	active_spreads: HashMap<(BlockPos, Id<BlockLayer>), Id<Block>>,
 }
 
 impl SpreaderSystem {
 	pub fn new() -> SpreaderSystem {
 		SpreaderSystem {
-			rand:           Xoroshiro64Star::seed_from_u64(69420),
+			rand: Xoroshiro64Star::seed_from_u64(69420),
 			active_spreads: Default::default(),
 		}
 	}

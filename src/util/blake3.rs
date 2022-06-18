@@ -256,11 +256,11 @@ fn parent_cv(
 
 /// An incremental hasher that can accept any number of writes.
 pub struct Hasher {
-	chunk_state:  ChunkState,
-	key_words:    [u32; 8],
-	cv_stack:     [[u32; 8]; 54], // Space for 54 subtree chaining values:
-	cv_stack_len: u8,             // 2^54 * CHUNK_LEN = 2^64
-	flags:        u32,
+	chunk_state: ChunkState,
+	key_words: [u32; 8],
+	cv_stack: [[u32; 8]; 54], // Space for 54 subtree chaining values:
+	cv_stack_len: u8,         // 2^54 * CHUNK_LEN = 2^64
+	flags: u32,
 }
 
 impl Hasher {

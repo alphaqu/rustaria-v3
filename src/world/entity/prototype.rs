@@ -17,11 +17,11 @@ pub struct EntityDesc {
 
 #[derive(Debug)]
 pub struct EntityPrototype {
-	pub position:  PositionComponent,
-	pub velocity:  Option<PhysicsComponent>,
+	pub position: PositionComponent,
+	pub velocity: Option<PhysicsComponent>,
 	pub collision: Option<CollisionComponent>,
-	pub humanoid:  Option<HumanoidComponent>,
-	pub gravity:   Option<GravityComponent>,
+	pub humanoid: Option<HumanoidComponent>,
+	pub gravity: Option<GravityComponent>,
 }
 
 impl EntityPrototype {
@@ -52,14 +52,14 @@ impl Prototype for EntityPrototype {
 
 	fn get_name() -> &'static str { "entity" }
 
-	fn from_lua(table: LunaTable, _: &mut Hasher) -> eyre::Result<Self> {
+	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
 		let _span = error_span!(target: "lua", "entity").entered();
 		Ok(EntityPrototype {
-			position:  table.get_ser("position")?,
-			velocity:  table.get_ser("velocity")?,
+			position: table.get_ser("position")?,
+			velocity: table.get_ser("velocity")?,
 			collision: table.get_ser("collision")?,
-			humanoid:  table.get_ser("humanoid")?,
-			gravity:   table.get_ser("gravity")?,
+			humanoid: table.get_ser("humanoid")?,
+			gravity: table.get_ser("gravity")?,
 		})
 	}
 }

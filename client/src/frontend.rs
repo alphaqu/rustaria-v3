@@ -20,12 +20,12 @@ use tracing::{event, Level};
 use crate::render::ty::mesh_buffer::MeshDrawer;
 
 pub struct Frontend {
-	glfw:    Glfw,
-	window:  Rc<Window>,
-	events:  Receiver<(f64, WindowEvent)>,
+	glfw: Glfw,
+	window: Rc<Window>,
+	events: Receiver<(f64, WindowEvent)>,
 	pub ctx: Rc<glium::backend::Context>,
 
-	pub dimensions:   (u32, u32),
+	pub dimensions: (u32, u32),
 	pub aspect_ratio: f32,
 }
 
@@ -67,7 +67,7 @@ impl Frontend {
 					false,
 					DebugCallbackBehavior::Custom {
 						synchronous: false,
-						callback:    Box::new(|src, kind, severity, _, _, msg| match severity {
+						callback: Box::new(|src, kind, severity, _, _, msg| match severity {
 							Severity::Notification => {
 								event!(target: "opengl", Level::DEBUG, ?src, ?kind, "{}", msg);
 							}

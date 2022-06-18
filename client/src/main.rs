@@ -62,9 +62,9 @@ fn main() -> Result<()> {
 
 pub struct Client {
 	viewport: Viewport,
-	debug:    Debug,
-	game:     Option<ClientGame>,
-	api:      ClientApi,
+	debug: Debug,
+	game: Option<ClientGame>,
+	api: ClientApi,
 	frontend: Frontend,
 
 	reload_requested: bool,
@@ -75,8 +75,8 @@ impl Client {
 		let run_dir = std::env::current_dir().wrap_err("Could not find current directory.")?;
 		let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
 		let mut debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
-		debug.enable(DebugCategory::TileSpread);
-		debug.enable(DebugCategory::EntityCollision);
+		//debug.enable(DebugCategory::TileSpread);
+		//debug.enable(DebugCategory::EntityCollision);
 		//debug.enable(DebugCategory::ChunkMeshing);
 		//debug.enable(DebugCategory::ChunkBorders);
 		//

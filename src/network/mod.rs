@@ -10,7 +10,7 @@ pub mod util;
 pub struct Token();
 
 pub struct ServerNetwork {
-	pub sender:   Sender<ClientBoundPacket>,
+	pub sender: Sender<ClientBoundPacket>,
 	pub receiver: Receiver<ServerBoundPacket>,
 }
 
@@ -29,7 +29,7 @@ impl ServerNetwork {
 }
 
 pub struct ClientNetwork {
-	sender:   Sender<ServerBoundPacket>,
+	sender: Sender<ServerBoundPacket>,
 	receiver: Receiver<ClientBoundPacket>,
 }
 
@@ -48,11 +48,11 @@ pub fn new_networking() -> (ClientNetwork, ServerNetwork) {
 
 	(
 		ClientNetwork {
-			sender:   s_sender,
+			sender: s_sender,
 			receiver: c_receiver,
 		},
 		ServerNetwork {
-			sender:   c_sender,
+			sender: c_sender,
 			receiver: s_receiver,
 		},
 	)

@@ -4,9 +4,10 @@ use eyre::WrapErr;
 use mlua::{Function, Lua, LuaSerdeExt};
 use rustaria::{
 	api::{
+		id_table::IdTable,
 		luna::{lib::registry_builder::RegistryBuilder, table::LunaTable},
 		prototype::Prototype,
-		registry::{IdTable, Registry},
+		registry::Registry,
 	},
 	ty::{
 		block_pos::BlockPos,
@@ -37,7 +38,7 @@ use crate::{
 
 pub struct BlockLayerRenderer {
 	block_renderers: IdTable<Block, Option<BlockRenderer>>,
-	kind_descs:      Vec<KindDesc>,
+	kind_descs: Vec<KindDesc>,
 }
 
 impl BlockLayerRenderer {
@@ -80,8 +81,8 @@ impl BlockLayerRenderer {
 }
 
 pub struct BlockLayerRendererPrototype {
-	pub blocks:   Registry<BlockRendererPrototype>,
-	pub get_uv:   Function,
+	pub blocks: Registry<BlockRendererPrototype>,
+	pub get_uv: Function,
 	pub get_rect: Function,
 }
 
@@ -96,7 +97,7 @@ impl BlockLayerRendererPrototype {
 		for value in SpriteConnectionKind::iter() {
 			let value = format!("{:?}", value);
 			kind_uvs.push(KindDesc {
-				uv:   lua
+				uv: lua
 					.from_value(
 						self.get_uv
 							.call(value.clone())
@@ -124,7 +125,7 @@ impl BlockLayerRendererPrototype {
 					)
 				})
 				.collect(),
-			kind_descs:      kind_uvs,
+			kind_descs: kind_uvs,
 		})
 	}
 
@@ -140,16 +141,15 @@ impl Prototype for BlockLayerRendererPrototype {
 
 	fn get_name() -> &'static str { "block_layer_renderer" }
 
-	fn from_lua(table: LunaTable, hasher: &mut Hasher) -> eyre::Result<Self> {
-		let _span = error_span!(target: "lua", "block_layer_renderer").entered();
+	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
 		let mut blocks = RegistryBuilder::<BlockRendererPrototype>::new();
 		blocks.register(table.lua, table.get("blocks")?)?;
 
 		Ok(BlockLayerRendererPrototype {
-			blocks:   blocks
-				.build(table.lua, hasher)
+			blocks: blocks
+				.build(table.lua)
 				.wrap_err("Building \"blocks\" registry")?,
-			get_uv:   table.get("get_uv")?,
+			get_uv: table.get("get_uv")?,
 			get_rect: table.get("get_rect")?,
 		})
 	}

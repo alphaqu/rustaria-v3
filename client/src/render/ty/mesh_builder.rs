@@ -7,14 +7,14 @@ use euclid::Rect;
 #[derive(Clone)]
 pub struct MeshBuilder<V: Clone> {
 	pub(crate) vertex: Vec<V>,
-	pub(crate) index:  Vec<u32>,
+	pub(crate) index: Vec<u32>,
 }
 
 impl<V: Clone> MeshBuilder<V> {
 	pub fn new() -> MeshBuilder<V> {
 		MeshBuilder {
 			vertex: Vec::new(),
-			index:  Vec::new(),
+			index: Vec::new(),
 		}
 	}
 

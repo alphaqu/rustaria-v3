@@ -22,7 +22,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct BlockRenderer {
-	pub image:           Rect<f32, Atlas>,
+	pub image: Rect<f32, Atlas>,
 	pub connection_type: ConnectionType,
 }
 
@@ -65,20 +65,20 @@ impl BlockRenderer {
 }
 
 pub struct KindDesc {
-	pub(crate) uv:   Rect<f32, WS>,
+	pub(crate) uv: Rect<f32, WS>,
 	pub(crate) rect: Rect<f32, WS>,
 }
 
 #[derive(Debug)]
 pub struct BlockRendererPrototype {
-	pub image:           Identifier,
+	pub image: Identifier,
 	pub connection_type: ConnectionType,
 }
 
 impl BlockRendererPrototype {
 	pub fn bake(&self, atlas: &Atlas) -> BlockRenderer {
 		BlockRenderer {
-			image:           atlas.get(&self.image),
+			image: atlas.get(&self.image),
 			connection_type: self.connection_type,
 		}
 	}
@@ -93,10 +93,10 @@ impl Prototype for BlockRendererPrototype {
 
 	fn get_name() -> &'static str { "block_renderer" }
 
-	fn from_lua(table: LunaTable, _: &mut Hasher) -> eyre::Result<Self> {
+	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
 		let _span = error_span!(target: "lua", "block_renderer").entered();
 		Ok(BlockRendererPrototype {
-			image:           table.get("image")?,
+			image: table.get("image")?,
 			connection_type: table.get_ser("connection_type")?,
 		})
 	}

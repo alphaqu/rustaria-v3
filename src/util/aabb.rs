@@ -30,8 +30,8 @@ pub fn rect_vs_rect(r1: Rect, r2: Rect) -> bool {
 }
 
 pub struct RayRectCollision {
-	pub contact_time:   f32,
-	pub contact_point:  Vec2,
+	pub contact_time: f32,
+	pub contact_point: Vec2,
 	pub contact_normal: Option<Direction>,
 }
 

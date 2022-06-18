@@ -2,7 +2,7 @@ use std::{collections::HashMap, io, io::ErrorKind, path::PathBuf, sync::Arc};
 
 use eyre::{Context, Result};
 use rayon::{ThreadPool, ThreadPoolBuilder};
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::{
 	api::{
@@ -19,6 +19,7 @@ use crate::{
 	},
 };
 
+pub mod id_table;
 pub mod luna;
 pub mod plugin;
 pub mod prototype;
@@ -26,11 +27,11 @@ pub mod registry;
 pub mod util;
 
 pub struct Api {
-	pub carrier:     Carrier,
-	pub resources:   Plugins,
+	pub carrier: Carrier,
+	pub resources: Plugins,
 	pub thread_pool: Arc<ThreadPool>,
-	pub luna:        Luna,
-	pub hash:        Option<Blake3Hash>,
+	pub luna: Luna,
+	pub hash: Option<Blake3Hash>,
 }
 
 impl Api {
@@ -67,7 +68,7 @@ impl Api {
 			luna: Luna::new(&resources)?,
 			carrier: Carrier {
 				block_layer: Registry::default(),
-				entity:      Registry::default(),
+				entity: Registry::default(),
 			},
 			resources,
 			thread_pool: Arc::new(ThreadPoolBuilder::new().build()?),
@@ -75,7 +76,7 @@ impl Api {
 		})
 	}
 
-	pub fn reload(&mut self, reload: &mut Reload) -> Result<Hasher> {
+	pub fn reload(&mut self, reload: &mut Reload) -> Result<()> {
 		self.hash = None;
 
 		// Prepare for reload
@@ -87,7 +88,7 @@ impl Api {
 			self.luna.lua.globals().set("reload", glue.clone())?;
 
 			for plugin in self.resources.plugins.values() {
-				debug!("Reloading {}", &plugin.id);
+				info!("Reloading {}", &plugin.id);
 				let identifier = Identifier::new("main.lua");
 				let data = self
 					.resources
@@ -101,11 +102,9 @@ impl Api {
 			}
 		}
 
-		let mut hasher = Hasher::new();
-
 		let registry = reload
 			.stargate
-			.build_registry::<BlockLayerPrototype>(&self.luna.lua, &mut hasher)?;
+			.build_registry::<BlockLayerPrototype>(&self.luna.lua)?;
 
 		let block_layer = registry
 			.table
@@ -122,16 +121,19 @@ impl Api {
 			block_layer,
 			entity: reload
 				.stargate
-				.build_registry::<EntityPrototype>(&self.luna.lua, &mut hasher)?
-				.into_iter()
+				.build_registry::<EntityPrototype>(&self.luna.lua)?
+				.into_entries()
 				.map(|(id, ident, prototype)| (id.build(), ident, prototype.bake(id)))
 				.collect(),
 		};
 
-		Ok(hasher)
+		// Hash
+		let mut hasher = Hasher::new();
+		self.carrier.block_layer.append_hasher(&mut hasher);
+		self.carrier.entity.append_hasher(&mut hasher);
+		self.hash = Some(hasher.finalize());
+		Ok(())
 	}
-
-	pub fn finalize_reload(&mut self, hasher: Hasher) { self.hash = Some(hasher.finalize()); }
 }
 pub enum ResourceKind {
 	Assets,
@@ -162,7 +164,7 @@ impl Plugins {
 
 pub struct Carrier {
 	pub block_layer: Registry<BlockLayer>,
-	pub entity:      Registry<EntityDesc>,
+	pub entity: Registry<EntityDesc>,
 }
 
 multi_deref_fields!(Carrier {

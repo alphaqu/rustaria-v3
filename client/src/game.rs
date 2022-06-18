@@ -23,8 +23,8 @@ pub struct ClientGame {
 	integrated: Option<Server>,
 
 	network: ClientNetwork,
-	player:  PlayerSystem,
-	world:   ClientWorld,
+	player: PlayerSystem,
+	world: ClientWorld,
 
 	pub renderer: WorldRenderer,
 }

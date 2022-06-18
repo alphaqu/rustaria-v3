@@ -123,7 +123,7 @@ impl Prototype for EntityRendererPrototype {
 
 	fn get_name() -> &'static str { "entity_renderer" }
 
-	fn from_lua(table: LunaTable, _: &mut Hasher) -> Result<Self> {
+	fn from_lua(table: LunaTable) -> Result<Self> {
 		let _span = error_span!(target: "lua", "entity_renderer").entered();
 		Ok(EntityRendererPrototype {
 			image: table.get("image")?,

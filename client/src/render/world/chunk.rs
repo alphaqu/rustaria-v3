@@ -5,7 +5,7 @@ use eyre::Result;
 use glium::{uniform, Blend, DrawParameters, Program};
 use layer::BlockLayerRenderer;
 use rustaria::{
-	api::registry::IdTable,
+	api::id_table::IdTable,
 	debug::{DebugCategory, DebugRendererImpl},
 	draw_debug,
 	ty::{
@@ -48,9 +48,9 @@ impl WorldChunkRenderer {
 				self.chunk_meshes.insert(
 					*pos,
 					ChunkMesh {
-						drawer:  frontend.create_drawer()?,
+						drawer: frontend.create_drawer()?,
 						builder: MeshBuilder::new(),
-						dirty:   true,
+						dirty: true,
 					},
 				);
 			}
@@ -115,9 +115,9 @@ impl WorldChunkRenderer {
 							self.chunk_meshes.insert(
 								pos,
 								ChunkMesh {
-									drawer:  draw.frontend.create_drawer()?,
+									drawer: draw.frontend.create_drawer()?,
 									builder: MeshBuilder::new(),
-									dirty:   true,
+									dirty: true,
 								},
 							);
 						}
@@ -131,9 +131,9 @@ impl WorldChunkRenderer {
 }
 
 pub struct ChunkMesh {
-	drawer:  MeshDrawer<PosTexVertex>,
+	drawer: MeshDrawer<PosTexVertex>,
 	builder: MeshBuilder<PosTexVertex>,
-	dirty:   bool,
+	dirty: bool,
 }
 
 impl ChunkMesh {

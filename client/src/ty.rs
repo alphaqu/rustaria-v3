@@ -5,23 +5,23 @@ use rustaria::TPS;
 pub const TICK_DURATION: Duration = Duration::from_nanos((1000000000 / TPS) as u64);
 
 pub struct Timing {
-	last_tick:  Instant,
+	last_tick: Instant,
 	tick_delta: f32,
-	old_delta:  f32,
+	old_delta: f32,
 
 	// cache
 	ticked: bool,
-	step:   f32,
+	step: f32,
 }
 
 impl Timing {
 	pub fn new() -> Timing {
 		Timing {
-			last_tick:  Instant::now(),
+			last_tick: Instant::now(),
 			tick_delta: 0.0,
-			old_delta:  0.0,
-			ticked:     false,
-			step:       0.0,
+			old_delta: 0.0,
+			ticked: false,
+			step: 0.0,
 		}
 	}
 

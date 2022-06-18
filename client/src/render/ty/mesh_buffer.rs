@@ -9,21 +9,21 @@ use glium::{
 use crate::{render::ty::mesh_builder::MeshBuilder, Frontend};
 
 pub struct MeshDrawer<T: Copy + Vertex> {
-	ctx:           Rc<glium::backend::Context>,
-	vertex:        Option<VertexBuffer<T>>,
-	index:         Option<IndexBuffer<u32>>,
+	ctx: Rc<glium::backend::Context>,
+	vertex: Option<VertexBuffer<T>>,
+	index: Option<IndexBuffer<u32>>,
 	vertex_length: usize,
-	index_length:  usize,
+	index_length: usize,
 }
 
 impl<T: Copy + Vertex> MeshDrawer<T> {
 	pub fn new(frontend: &Frontend) -> Result<MeshDrawer<T>> {
 		Ok(MeshDrawer {
-			ctx:           frontend.ctx.clone(),
-			vertex:        None,
-			index:         None,
+			ctx: frontend.ctx.clone(),
+			vertex: None,
+			index: None,
 			vertex_length: 0,
-			index_length:  0,
+			index_length: 0,
 		})
 	}
 

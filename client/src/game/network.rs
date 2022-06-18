@@ -16,12 +16,12 @@ use tracing::error;
 
 pub enum ClientNetworkSystem {
 	Integrated {
-		sender:   Sender<ServerBoundPacket>,
+		sender: Sender<ServerBoundPacket>,
 		receiver: Receiver<ClientBoundPacket>,
 	},
 	Remote {
 		socket: Box<Socket>,
-		addr:   SocketAddr,
+		addr: SocketAddr,
 	},
 }
 
@@ -32,11 +32,11 @@ impl ClientNetworkSystem {
 
 		(
 			ClientNetworkSystem::Integrated {
-				sender:   s_sender,
+				sender: s_sender,
 				receiver: c_receiver,
 			},
 			ServerNetwork {
-				sender:   c_sender,
+				sender: c_sender,
 				receiver: s_receiver,
 			},
 		)

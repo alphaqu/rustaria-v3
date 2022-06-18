@@ -8,14 +8,14 @@ use crate::api::util;
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct Identifier {
 	pub namespace: String,
-	pub path:      String,
+	pub path: String,
 }
 
 impl Identifier {
 	pub fn new(path: &'static str) -> Identifier {
 		Identifier {
 			namespace: "rustaria".to_string(),
-			path:      path.to_string(),
+			path: path.to_string(),
 		}
 	}
 }
@@ -26,12 +26,12 @@ impl FromLua for Identifier {
 		if let Some((namespace, path)) = string.split_once(':') {
 			Ok(Identifier {
 				namespace: namespace.to_string(),
-				path:      path.to_string(),
+				path: path.to_string(),
 			})
 		} else {
 			Ok(Identifier {
 				namespace: "rustaria".to_string(),
-				path:      string,
+				path: string,
 			})
 		}
 	}

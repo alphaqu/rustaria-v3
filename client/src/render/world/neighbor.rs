@@ -11,7 +11,7 @@ use rustaria::{
 #[derive(Clone)]
 pub(crate) struct NeighborMatrixBuilder {
 	matrix: ChunkLayer<DirMap<ConnectionType>>,
-	layer:  ChunkLayer<ConnectionType>,
+	layer: ChunkLayer<ConnectionType>,
 }
 
 impl NeighborMatrixBuilder {

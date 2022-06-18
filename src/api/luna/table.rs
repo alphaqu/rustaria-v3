@@ -5,7 +5,7 @@ use mlua::{FromLua, Lua, LuaSerdeExt, Table, ToLua};
 use serde::Deserialize;
 
 pub struct LunaTable<'a> {
-	pub lua:   &'a Lua,
+	pub lua: &'a Lua,
 	pub table: Table,
 }
 

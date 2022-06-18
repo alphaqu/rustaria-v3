@@ -12,13 +12,13 @@ use crate::{
 
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct BlockInstance {
-	pub id:        Id<Block>,
+	pub id: Id<Block>,
 	pub collision: bool,
 }
 
 pub struct Block {
 	pub collision: bool,
-	pub spread:    Option<BlockSpreader>,
+	pub spread: Option<BlockSpreader>,
 }
 
 impl Block {
@@ -32,14 +32,14 @@ impl Block {
 
 pub struct BlockPrototype {
 	pub collision: bool,
-	pub spread:    Option<BlockSpreaderPrototype>,
+	pub spread: Option<BlockSpreaderPrototype>,
 }
 
 impl BlockPrototype {
 	pub fn bake(self, blocks: &HashMap<Identifier, Id<Block>>) -> eyre::Result<Block> {
 		Ok(Block {
 			collision: self.collision,
-			spread:    if let Some(spread) = self.spread {
+			spread: if let Some(spread) = self.spread {
 				Some(spread.bake(blocks).wrap_err("Could not bake spreader")?)
 			} else {
 				None
@@ -53,11 +53,10 @@ impl Prototype for BlockPrototype {
 
 	fn get_name() -> &'static str { "block" }
 
-	fn from_lua(table: LunaTable, _: &mut Hasher) -> eyre::Result<Self> {
-		let _span = error_span!(target: "lua", "block").entered();
+	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
 		Ok(BlockPrototype {
 			collision: table.get("collision")?,
-			spread:    table.get("spread")?,
+			spread: table.get("spread")?,
 		})
 	}
 }

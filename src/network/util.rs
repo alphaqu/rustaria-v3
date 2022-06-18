@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 pub struct Connector {
 	socket: Socket,
-	addr:   SocketAddr,
+	addr: SocketAddr,
 }
 
 impl Connector {

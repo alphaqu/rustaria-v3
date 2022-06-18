@@ -1,5 +1,4 @@
 local connected_blocks = require "connected_blocks";
-log.info(rustaria_hello);
 
 if reload.client then
     reload.stargate.entity_renderer:register {
@@ -47,7 +46,6 @@ if reload.client then
     }
 end
 
-log.info("Hi there");
 reload.stargate.block_layer:register {
     ["tile"] = {
         collision = true,

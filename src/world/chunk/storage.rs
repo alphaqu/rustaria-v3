@@ -6,10 +6,10 @@ use crate::{Chunk, ChunkPos};
 
 #[derive(Clone)]
 pub struct ChunkStorage {
-	width:  u32,
+	width: u32,
 	height: u32,
 	chunks: FxHashMap<ChunkPos, Chunk>,
-	dirty:  FxHashSet<ChunkPos>,
+	dirty: FxHashSet<ChunkPos>,
 }
 
 impl ChunkStorage {

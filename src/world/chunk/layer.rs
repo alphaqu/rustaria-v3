@@ -13,14 +13,14 @@ use crate::{
 };
 
 pub struct BlockLayer {
-	pub blocks:    Registry<Block>,
-	pub default:   Id<Block>,
+	pub blocks: Registry<Block>,
+	pub default: Id<Block>,
 	pub collision: bool,
 }
 
 pub struct BlockLayerPrototype {
-	pub blocks:    Registry<BlockPrototype>,
-	pub default:   Identifier,
+	pub blocks: Registry<BlockPrototype>,
+	pub default: Identifier,
 	pub collision: bool,
 }
 
@@ -34,7 +34,7 @@ impl BlockLayerPrototype {
 			.collect();
 
 		let mut out = Vec::new();
-		for (id, ident, entry) in self.blocks.into_iter() {
+		for (id, ident, entry) in self.blocks.into_entries() {
 			let prototype = entry
 				.bake(&lookup)
 				.wrap_err_with(|| format!("Failed to bake block {}", ident))?;
@@ -43,11 +43,11 @@ impl BlockLayerPrototype {
 
 		let registry: Registry<Block> = out.into_iter().collect();
 		Ok(BlockLayer {
-			default:   *registry
+			default: *registry
 				.ident_to_id
 				.get(&self.default)
 				.wrap_err("Could not find default tile registered")?,
-			blocks:    registry,
+			blocks: registry,
 			collision: self.collision,
 		})
 	}
@@ -58,15 +58,14 @@ impl Prototype for BlockLayerPrototype {
 
 	fn get_name() -> &'static str { "block_layer" }
 
-	fn from_lua(table: LunaTable, hasher: &mut Hasher) -> eyre::Result<Self> {
-		let _span = error_span!(target: "lua", "block_layer").entered();
+	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
 		let mut blocks = RegistryBuilder::<BlockPrototype>::new();
 		blocks.register(table.lua, table.get("blocks")?)?;
 		Ok(BlockLayerPrototype {
-			blocks:    blocks
-				.build(table.lua, hasher)
+			blocks: blocks
+				.build(table.lua)
 				.wrap_err("Failed to create blocks registry")?,
-			default:   table.get("default")?,
+			default: table.get("default")?,
 			collision: table.get("collision")?,
 		})
 	}

@@ -29,14 +29,14 @@ const MAX_CORRECTION: f32 = 0.025;
 pub struct PlayerSystem {
 	pub server_player: Option<Entity>,
 	base_server_world: EntityWorld,
-	prediction_world:  EntityWorld,
+	prediction_world: EntityWorld,
 
 	send_command: PlayerCommand,
 
-	w:    bool,
-	a:    bool,
-	s:    bool,
-	d:    bool,
+	w: bool,
+	a: bool,
+	s: bool,
+	d: bool,
 	jump: bool,
 	zoom: f32,
 
@@ -50,8 +50,8 @@ pub struct PlayerSystem {
 	player_entity: Id<EntityDesc>,
 	presses: Vec<Press>,
 
-	layer_id:     Id<BlockLayer>,
-	place_block:  Id<Block>,
+	layer_id: Id<BlockLayer>,
+	place_block: Id<Block>,
 	remove_block: Id<Block>,
 }
 
@@ -329,10 +329,9 @@ impl PlayerSystem {
 		let entity = self.server_player?;
 
 		// Put prediction on the server value
-		self.prediction_world.storage.insert_raw(
-			entity,
-			self.base_server_world.storage.clone(entity)?.build(),
-		);
+		self.base_server_world
+			.storage
+			.clone_to(entity, entity, &mut self.prediction_world.storage);
 
 		// If reconciliation is on, we apply values that the server has not yet processed.
 		for (_, speed) in &self.unprocessed_events {

@@ -6,7 +6,7 @@ use crate::api::luna::glue::LuaGlue;
 
 pub struct GlueUserDataFields<'a, V: UserData, F: UserDataFields<LuaGlue<V>>> {
 	pub(crate) fields: &'a mut F,
-	pub(crate) data:   PhantomData<V>,
+	pub(crate) data: PhantomData<V>,
 }
 
 impl<'a, V: UserData, I: UserDataFields<LuaGlue<V>>> UserDataFields<V>

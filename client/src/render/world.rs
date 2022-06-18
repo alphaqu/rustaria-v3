@@ -16,8 +16,8 @@ pub mod neighbor;
 
 pub struct WorldRenderer {
 	pos_color_program: Program,
-	chunk_renderer:    WorldChunkRenderer,
-	entity_renderer:   WorldEntityRenderer,
+	chunk_renderer: WorldChunkRenderer,
+	entity_renderer: WorldEntityRenderer,
 }
 
 impl WorldRenderer {
@@ -49,8 +49,8 @@ impl WorldRenderer {
 					fragment_shader: include_str!("../builtin/pos_tex.frag.glsl"),
 				},
 			)?,
-			chunk_renderer:    WorldChunkRenderer::new()?,
-			entity_renderer:   WorldEntityRenderer::new(frontend)?,
+			chunk_renderer: WorldChunkRenderer::new()?,
+			entity_renderer: WorldEntityRenderer::new(frontend)?,
 		})
 	}
 

@@ -30,8 +30,8 @@ pub const KERNEL_VERSION: Version = Version::new(0, 0, 1);
 
 pub struct Server {
 	network: ServerNetwork,
-	player:  PlayerSystem,
-	world:   World,
+	player: PlayerSystem,
+	world: World,
 }
 
 impl Server {

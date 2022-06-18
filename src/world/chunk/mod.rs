@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 use block::BlockInstance;
 use layer::BlockLayer;
 
-use crate::{api::registry::IdTable, ty::block_layer_pos::BlockLayerPos};
+use crate::{api::id_table::IdTable, ty::block_layer_pos::BlockLayerPos};
 
 pub mod block;
 pub mod layer;
