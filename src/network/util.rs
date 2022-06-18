@@ -1,28 +1,29 @@
-use std::net::SocketAddr;
-use std::thread::sleep;
-use std::time::{Duration, Instant};
+use std::{
+	net::SocketAddr,
+	thread::sleep,
+	time::{Duration, Instant},
+};
+
 use eyre::Report;
 use laminar::{Packet, Socket, SocketEvent};
-use serde::{Deserialize, Serialize};
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 pub struct Connector {
 	socket: Socket,
-	addr: SocketAddr
+	addr:   SocketAddr,
 }
 
 impl Connector {
 	pub fn new(addr: SocketAddr) -> laminar::Result<Connector> {
-		Socket::bind(addr).map(|socket| {
-			Connector {
-				socket,
-				addr
-			}
-		})
+		Socket::bind(addr).map(|socket| Connector { socket, addr })
 	}
 
 	pub fn send<V: Serialize>(&mut self, value: &V) -> eyre::Result<()> {
-		self.socket.send(Packet::reliable_ordered(self.addr, bincode::serialize(value)?, None))?;
+		self.socket.send(Packet::reliable_ordered(
+			self.addr,
+			bincode::serialize(value)?,
+			None,
+		))?;
 		self.socket.manual_poll(Instant::now());
 		Ok(())
 	}
@@ -47,8 +48,5 @@ impl Connector {
 		}
 	}
 
-	pub fn done(self) -> (Socket, SocketAddr) {
-		(self.socket, self.addr)
-	}
-
+	pub fn done(self) -> (Socket, SocketAddr) { (self.socket, self.addr) }
 }

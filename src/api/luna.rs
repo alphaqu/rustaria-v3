@@ -1,18 +1,21 @@
-pub mod lib;
-pub mod glue;
-pub mod table;
-
 use std::fmt::Write;
+
 use eyre::{Result, WrapErr};
-use mlua::{Chunk, Lua, Table};
-use mlua::prelude::LuaError;
+use mlua::{prelude::LuaError, Chunk, Lua, Table};
 use tracing::debug;
-use crate::api::{ResourceKind, Plugins};
-use crate::ty::identifier::Identifier;
+
+use crate::{
+	api::{Plugins, ResourceKind},
+	ty::identifier::Identifier,
+};
+
+pub mod glue;
+pub mod lib;
+pub mod table;
 
 /// Holds everything luna.
 pub struct Luna {
-	pub lua: Lua
+	pub lua: Lua,
 }
 
 impl Luna {
@@ -28,20 +31,21 @@ impl Luna {
 		searchers.raw_insert(
 			2,
 			lua.create_function(move |lua, mut location: Identifier| {
-				location.path.write_str(".lua").map_err(LuaError::external)?;
+				location
+					.path
+					.write_str(".lua")
+					.map_err(LuaError::external)?;
 				debug!(target: "luna::loading", "Loading {}", location);
 				let data = resources.get_resource(ResourceKind::Source, &location)?;
 				Self::load_inner(lua, &location, &data)?.into_function()
 			})?,
 		)?;
 
-		Ok(Luna {
-			lua
-		})
+		Ok(Luna { lua })
 	}
 
 	pub fn load<'a>(&self, name: &Identifier, data: &'a [u8]) -> mlua::Result<Chunk<'a>> {
-		Self::load_inner(&self.lua, name ,data)
+		Self::load_inner(&self.lua, name, data)
 	}
 
 	fn load_inner<'a>(lua: &Lua, name: &Identifier, data: &'a [u8]) -> mlua::Result<Chunk<'a>> {
@@ -51,5 +55,4 @@ impl Luna {
 
 pub struct LunaFile {
 	data: Vec<u8>,
-
 }

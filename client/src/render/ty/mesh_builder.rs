@@ -1,4 +1,5 @@
 use std::ops::Add;
+
 use euclid::Rect;
 
 /// A MeshBuilder constructs a mesh through a series of points.
@@ -6,17 +7,16 @@ use euclid::Rect;
 #[derive(Clone)]
 pub struct MeshBuilder<V: Clone> {
 	pub(crate) vertex: Vec<V>,
-	pub(crate) index: Vec<u32>,
+	pub(crate) index:  Vec<u32>,
 }
 
 impl<V: Clone> MeshBuilder<V> {
 	pub fn new() -> MeshBuilder<V> {
 		MeshBuilder {
 			vertex: Vec::new(),
-			index: Vec::new()
+			index:  Vec::new(),
 		}
 	}
-
 
 	/// Push a single point to the mesh.
 	pub fn push(&mut self, value: V) {
@@ -41,10 +41,10 @@ impl<V: Clone> MeshBuilder<V> {
 	/// - Vertex: `bottom-left`, `top-left`, `top-right`, `bottom-right`
 	pub fn push_quad(&mut self, quad: impl Quad<V>) {
 		let len = self.vertex.len() as u32;
-		self.index.extend_from_slice(&[len, len + 1, len + 3, len + 1, len + 2, len + 3]);
+		self.index
+			.extend_from_slice(&[len, len + 1, len + 3, len + 1, len + 2, len + 3]);
 		self.vertex.extend_from_slice(&quad.expand());
 	}
-
 
 	/// Combines another mesh builder, this also clears the other mesh builder..
 	pub fn append(&mut self, builder: &mut MeshBuilder<V>) {
@@ -80,9 +80,7 @@ pub trait Triangle<V> {
 }
 
 impl<V> Triangle<V> for [V; 3] {
-	fn expand(self) -> [V; 3] {
-		self
-	}
+	fn expand(self) -> [V; 3] { self }
 }
 
 //1, 3 -> 1 ---- 2 <- 4
@@ -95,9 +93,7 @@ pub trait Quad<V> {
 }
 
 impl<V> Quad<V> for [V; 4] {
-	fn expand(self) -> [V; 4] {
-		self
-	}
+	fn expand(self) -> [V; 4] { self }
 }
 
 impl<U, T: Copy + Add<T, Output = T>> Quad<[T; 2]> for Rect<T, U> {
@@ -112,13 +108,5 @@ impl<U, T: Copy + Add<T, Output = T>> Quad<[T; 2]> for Rect<T, U> {
 }
 
 impl<V: Clone> Quad<V> for V {
-	fn expand(self) -> [V; 4] {
-		[
-			self.clone(),
-			self.clone(),
-			self.clone(),
-			self,
-		]
-	}
+	fn expand(self) -> [V; 4] { [self.clone(), self.clone(), self.clone(), self] }
 }
-

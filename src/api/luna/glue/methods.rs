@@ -1,10 +1,12 @@
-use mlua::{FromLuaMulti, Lua, MetaMethod, ToLuaMulti, UserData, UserDataMethods};
 use std::marker::PhantomData;
+
+use mlua::{FromLuaMulti, Lua, MetaMethod, ToLuaMulti, UserData, UserDataMethods};
+
 use crate::api::luna::glue::LuaGlue;
 
-pub struct GlueUserDataMethods<'a, V: UserData, F: UserDataMethods<LuaGlue< V>>> {
+pub struct GlueUserDataMethods<'a, V: UserData, F: UserDataMethods<LuaGlue<V>>> {
 	pub(crate) methods: &'a mut F,
-	pub(crate) data: PhantomData<V>,
+	pub(crate) data:    PhantomData<V>,
 }
 
 impl<'a, V: UserData, I: UserDataMethods<LuaGlue<V>>> UserDataMethods<V>
@@ -17,9 +19,10 @@ impl<'a, V: UserData, I: UserDataMethods<LuaGlue<V>>> UserDataMethods<V>
 		R: ToLuaMulti,
 		M: 'static + Send + Fn(&Lua, &V, A) -> mlua::Result<R>,
 	{
-		self.methods.add_method(name, move |lua, data, args| unsafe  {
-			method(lua, &*data.value, args)
-		})
+		self.methods
+			.add_method(name, move |lua, data, args| unsafe {
+				method(lua, &*data.value, args)
+			})
 	}
 
 	fn add_method_mut<S, A, R, M>(&mut self, name: &S, mut method: M)
@@ -29,9 +32,10 @@ impl<'a, V: UserData, I: UserDataMethods<LuaGlue<V>>> UserDataMethods<V>
 		R: ToLuaMulti,
 		M: 'static + Send + FnMut(&Lua, &mut V, A) -> mlua::Result<R>,
 	{
-		self.methods.add_method_mut(name, move |lua, data, args| unsafe  {
-			method(lua, &mut *data.value, args)
-		})
+		self.methods
+			.add_method_mut(name, move |lua, data, args| unsafe {
+				method(lua, &mut *data.value, args)
+			})
 	}
 
 	fn add_function<S, A, R, F>(&mut self, name: &S, function: F)
@@ -61,9 +65,10 @@ impl<'a, V: UserData, I: UserDataMethods<LuaGlue<V>>> UserDataMethods<V>
 		R: ToLuaMulti,
 		M: 'static + Send + Fn(&Lua, &V, A) -> mlua::Result<R>,
 	{
-		self.methods.add_meta_method(meta, move |lua, data, args| unsafe  {
-			method(lua, &*data.value, args)
-		})
+		self.methods
+			.add_meta_method(meta, move |lua, data, args| unsafe {
+				method(lua, &*data.value, args)
+			})
 	}
 
 	fn add_meta_method_mut<S, A, R, M>(&mut self, meta: S, mut method: M)
@@ -73,9 +78,10 @@ impl<'a, V: UserData, I: UserDataMethods<LuaGlue<V>>> UserDataMethods<V>
 		R: ToLuaMulti,
 		M: 'static + Send + FnMut(&Lua, &mut V, A) -> mlua::Result<R>,
 	{
-		self.methods.add_meta_method_mut(meta, move |lua, data, args| unsafe  {
-			method(lua, &mut *data.value, args)
-		})
+		self.methods
+			.add_meta_method_mut(meta, move |lua, data, args| unsafe {
+				method(lua, &mut *data.value, args)
+			})
 	}
 
 	fn add_meta_function<S, A, R, F>(&mut self, meta: S, function: F)

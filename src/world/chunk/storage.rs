@@ -1,13 +1,15 @@
 use std::collections::hash_set::Iter;
+
 use fxhash::{FxHashMap, FxHashSet};
+
 use crate::{Chunk, ChunkPos};
 
 #[derive(Clone)]
 pub struct ChunkStorage {
-	width: u32,
+	width:  u32,
 	height: u32,
 	chunks: FxHashMap<ChunkPos, Chunk>,
-	dirty: FxHashSet<ChunkPos>,
+	dirty:  FxHashSet<ChunkPos>,
 }
 
 impl ChunkStorage {
@@ -16,17 +18,13 @@ impl ChunkStorage {
 			width,
 			height,
 			chunks: Default::default(),
-			dirty: Default::default()
+			dirty: Default::default(),
 		}
 	}
 
-	pub fn width(&self) -> u32 {
-		self.width
-	}
+	pub fn width(&self) -> u32 { self.width }
 
-	pub fn height(&self) -> u32 {
-		self.height
-	}
+	pub fn height(&self) -> u32 { self.height }
 
 	pub fn get(&self, pos: ChunkPos) -> Option<&Chunk> {
 		if !self.check_inbounds(pos) {
@@ -35,12 +33,12 @@ impl ChunkStorage {
 
 		self.chunks.get(&pos)
 	}
-	
+
 	pub fn contains(&self, pos: ChunkPos) -> bool {
 		if !self.check_inbounds(pos) {
 			return false;
 		}
-		
+
 		self.chunks.contains_key(&pos)
 	}
 
@@ -62,13 +60,9 @@ impl ChunkStorage {
 		self.chunks.insert(pos, chunk)
 	}
 
-	pub fn get_dirty(&self) -> Iter<'_, ChunkPos> {
-		self.dirty.iter()
-	}
+	pub fn get_dirty(&self) -> Iter<'_, ChunkPos> { self.dirty.iter() }
 
-	pub fn reset_dirty(&mut self) {
-		self.dirty.clear();
-	}
+	pub fn reset_dirty(&mut self) { self.dirty.clear(); }
 
 	pub fn reset(&mut self) {
 		self.reset_dirty();
@@ -76,8 +70,5 @@ impl ChunkStorage {
 	}
 
 	#[inline(always)]
-	fn check_inbounds(&self, pos: ChunkPos) -> bool {
-		pos.x < self.width && pos.y < self.height
-	}
+	fn check_inbounds(&self, pos: ChunkPos) -> bool { pos.x < self.width && pos.y < self.height }
 }
-

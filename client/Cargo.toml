@@ -29,7 +29,7 @@ apollo = { path = "../libs/apollo" }
 mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
 
 # Rendering
-glfw = { version  = "0.45.0", features = ["image"] }
+glfw = { version = "0.45.0", features = ["image"] }
 glium = { git = "https://github.com/alphaqu/glium", default-features = false, features = [] }
 image = { version = "0.24.2", default-features = false, features = ["png"] }
 

@@ -3,18 +3,19 @@
 use eyre::{Context, Result};
 use semver::Version;
 use tracing::info;
-
-use crate::api::Api;
 use ty::chunk_pos::ChunkPos;
+use world::{
+	chunk::{storage::ChunkStorage, Chunk},
+	entity::EntityWorld,
+};
 
-use crate::debug::DummyRenderer;
-use crate::network::packet::ServerBoundPacket;
-use crate::network::ServerNetwork;
-use crate::player::PlayerSystem;
-use crate::world::World;
-use world::chunk::storage::ChunkStorage;
-use world::chunk::Chunk;
-use world::entity::EntityWorld;
+use crate::{
+	api::Api,
+	debug::DummyRenderer,
+	network::{packet::ServerBoundPacket, ServerNetwork},
+	player::PlayerSystem,
+	world::World,
+};
 
 pub mod api;
 pub mod debug;
@@ -28,37 +29,37 @@ pub const TPS: usize = 60;
 pub const KERNEL_VERSION: Version = Version::new(0, 0, 1);
 
 pub struct Server {
-    network: ServerNetwork,
-    player: PlayerSystem,
-    world: World,
+	network: ServerNetwork,
+	player:  PlayerSystem,
+	world:   World,
 }
 
 impl Server {
-    pub fn new(api: &Api, network: ServerNetwork, world: World) -> Result<Server> {
-        info!("Launching integrated server.");
-        Ok(Server {
-            network,
-            player: PlayerSystem::new(api)?,
-            world,
-        })
-    }
+	pub fn new(api: &Api, network: ServerNetwork, world: World) -> Result<Server> {
+		info!("Launching integrated server.");
+		Ok(Server {
+			network,
+			player: PlayerSystem::new(api)?,
+			world,
+		})
+	}
 
-    pub fn tick(&mut self, api: &Api) -> Result<()> {
-        for (token, packet) in self.network.poll() {
-            match packet {
-                ServerBoundPacket::Player(packet) => {
-                    self.player.packet(token, packet, &mut self.world);
-                }
-                ServerBoundPacket::World(packet) => {
-                    self.world.packet(api, token, packet, &mut self.network)?;
-                }
-            }
-        }
+	pub fn tick(&mut self, api: &Api) -> Result<()> {
+		for (token, packet) in self.network.poll() {
+			match packet {
+				ServerBoundPacket::Player(packet) => {
+					self.player.packet(api, token, packet, &mut self.world);
+				}
+				ServerBoundPacket::World(packet) => {
+					self.world.packet(api, token, packet, &mut self.network)?;
+				}
+			}
+		}
 
-        self.world.tick(api, &mut DummyRenderer);
-        self.player
-            .tick(&mut self.network, &self.world)
-            .wrap_err("Ticking player system.")?;
-        Ok(())
-    }
+		self.world.tick(api, &mut DummyRenderer);
+		self.player
+			.tick(&mut self.network, &self.world)
+			.wrap_err("Ticking player system.")?;
+		Ok(())
+	}
 }

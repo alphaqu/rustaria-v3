@@ -1,26 +1,26 @@
-use std::fs::File;
-use std::io;
-use std::io::Read;
-use std::path::PathBuf;
+use std::{fs::File, io, io::Read, path::PathBuf};
+
+use eyre::{bail, Context, ContextCompat, Result};
 use parking_lot::Mutex;
 use zip::ZipArchive;
-use eyre::{bail, Context, ContextCompat, Report, Result};
-use mlua::ToLua;
 
 pub enum Archive {
 	Zip(Mutex<ZipArchive<File>>),
-	Directory(PathBuf)
+	Directory(PathBuf),
 }
 
 impl Archive {
 	pub fn new(path: &PathBuf) -> Result<Archive> {
 		if path.is_file() {
 			if let Some(extension) = path.extension() {
-				let extension = extension.to_str().wrap_err("Could not convert extension to UTF-8")?;
-				if extension == "zip"{
+				let extension = extension
+					.to_str()
+					.wrap_err("Could not convert extension to UTF-8")?;
+				if extension == "zip" {
 					let mut file = File::open(path).wrap_err("Could not open zip file.")?;
-					let zip_archive = ZipArchive::new(file).wrap_err("Could not create ZipArchive")?;
-					return Ok(Archive::Zip(Mutex::new(zip_archive)))
+					let zip_archive =
+						ZipArchive::new(file).wrap_err("Could not create ZipArchive")?;
+					return Ok(Archive::Zip(Mutex::new(zip_archive)));
 				}
 			}
 		} else if path.is_dir() {
@@ -39,9 +39,7 @@ impl Archive {
 				file.read_to_end(&mut out)?;
 				Ok(out)
 			}
-			Archive::Directory(directory) => {
-				std::fs::read(directory.join(location))
-			}
+			Archive::Directory(directory) => std::fs::read(directory.join(location)),
 		}
 	}
 }

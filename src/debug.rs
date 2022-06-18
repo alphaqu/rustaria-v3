@@ -1,6 +1,11 @@
-use euclid::{Rect, rect, vec2, Vector2D};
-use crate::ty::block_pos::BlockPos;
-use crate::ty::WS;
+use bitflags::bitflags;
+use euclid::{rect, vec2, Rect, Vector2D};
+
+use crate::{
+	ty::{block_pos::BlockPos, WS},
+	world::chunk::CHUNK_SIZE_F32,
+	ChunkPos,
+};
 
 pub trait DebugRendererImpl {
 	fn event(&mut self, call: DebugEvent);
@@ -8,16 +13,11 @@ pub trait DebugRendererImpl {
 
 pub struct DummyRenderer;
 impl DebugRendererImpl for DummyRenderer {
-	fn event(&mut self, _: DebugEvent) {
-	}
+	fn event(&mut self, _: DebugEvent) {}
 }
 
-use bitflags::bitflags;
-use crate::ChunkPos;
-use crate::world::chunk::CHUNK_SIZE_F32;
-
 bitflags! {
-    pub struct DebugCategory: u32 {
+	pub struct DebugCategory: u32 {
 		const Tile = 1 << 0;
 		const Temporary = 1 << 1;
 		const TileSpread = 1 << 2;
@@ -25,7 +25,7 @@ bitflags! {
 		const ChunkMeshing = 1 << 4;
 		const EntityVelocity = 1 << 5;
 		const EntityCollision = 1 << 6;
-    }
+	}
 }
 
 #[derive(Copy, Clone)]
@@ -33,9 +33,9 @@ pub enum DebugDraw {
 	Quad(Rect<f32, WS>),
 	Line {
 		start: Vector2D<f32, WS>,
-		stop: Vector2D<f32, WS>
+		stop:  Vector2D<f32, WS>,
 	},
-	Point(Vector2D<f32, WS>)
+	Point(Vector2D<f32, WS>),
 }
 
 impl From<BlockPos> for DebugDraw {
@@ -46,14 +46,17 @@ impl From<BlockPos> for DebugDraw {
 
 impl From<ChunkPos> for DebugDraw {
 	fn from(pos: ChunkPos) -> Self {
-		DebugDraw::Quad(rect(pos.x as f32 * CHUNK_SIZE_F32, pos.y as f32 * CHUNK_SIZE_F32, CHUNK_SIZE_F32, CHUNK_SIZE_F32))
+		DebugDraw::Quad(rect(
+			pos.x as f32 * CHUNK_SIZE_F32,
+			pos.y as f32 * CHUNK_SIZE_F32,
+			CHUNK_SIZE_F32,
+			CHUNK_SIZE_F32,
+		))
 	}
 }
 
 impl From<Rect<f32, WS>> for DebugDraw {
-	fn from(quad: Rect<f32, WS>) -> Self {
-		DebugDraw::Quad(quad)
-	}
+	fn from(quad: Rect<f32, WS>) -> Self { DebugDraw::Quad(quad) }
 }
 
 impl From<(Vector2D<f32, WS>, Vector2D<f32, WS>)> for DebugDraw {
@@ -63,9 +66,7 @@ impl From<(Vector2D<f32, WS>, Vector2D<f32, WS>)> for DebugDraw {
 }
 
 impl From<Vector2D<f32, WS>> for DebugDraw {
-	fn from(pos: Vector2D<f32, WS>) -> Self {
-		DebugDraw::Point(pos)
-	}
+	fn from(pos: Vector2D<f32, WS>) -> Self { DebugDraw::Point(pos) }
 }
 
 pub struct DebugEvent {
@@ -79,8 +80,8 @@ pub struct DebugEvent {
 
 #[macro_export]
 macro_rules! draw_debug {
-    ($DEBUG:expr, $CATEGORY:expr, $DRAW:expr, $COLOR:expr, $LINE_SIZE: expr, $TIME: literal) => {
-	    $DEBUG.event($crate::debug::DebugEvent  {
+	($DEBUG:expr, $CATEGORY:expr, $DRAW:expr, $COLOR:expr, $LINE_SIZE:expr, $TIME:literal) => {
+		$DEBUG.event($crate::debug::DebugEvent {
 			category: $CATEGORY,
 			draw: $DRAW.into(),
 			color: $COLOR,
@@ -88,20 +89,19 @@ macro_rules! draw_debug {
 			duration: ($TIME * $crate::TPS as f32) as u32,
 			ticks_remaining: ($TIME * $crate::TPS as f32) as u32,
 		});
-    };
-	($DEBUG:expr, $CATEGORY:expr, $DRAW:expr, $COLOR:expr, $LINE_SIZE: expr) => {
-	     $crate::draw_debug!($DEBUG, $CATEGORY, $DRAW, $COLOR, $LINE_SIZE, 0.0)
-    };
+	};
+	($DEBUG:expr, $CATEGORY:expr, $DRAW:expr, $COLOR:expr, $LINE_SIZE:expr) => {
+		$crate::draw_debug!($DEBUG, $CATEGORY, $DRAW, $COLOR, $LINE_SIZE, 0.0)
+	};
 	($DEBUG:expr, $CATEGORY:expr, $DRAW:expr, $COLOR:expr) => {
-	     $crate::draw_debug!($DEBUG, $CATEGORY, $DRAW, $COLOR, 1.0)
-    };
+		$crate::draw_debug!($DEBUG, $CATEGORY, $DRAW, $COLOR, 1.0)
+	};
 	($DEBUG:expr, $CATEGORY:expr, $DRAW:expr) => {
-	     $crate::draw_debug!($DEBUG, $CATEGORY, $DRAW, 0xc1c0c0)
-    };
+		$crate::draw_debug!($DEBUG, $CATEGORY, $DRAW, 0xc1c0c0)
+	};
 }
 impl DebugCategory {
 	pub fn tile(debug: &mut impl DebugRendererImpl) {
 		draw_debug!(debug, DebugCategory::Tile, (vec2(0.0, 0.0), vec2(0.0, 0.0)));
 	}
-
 }

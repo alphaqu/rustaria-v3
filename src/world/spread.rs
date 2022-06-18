@@ -1,30 +1,35 @@
 use std::collections::HashMap;
-use rand::{Rng, SeedableRng};
-use rand_xoshiro::Xoroshiro64Star;
-use crate::{Api, ChunkStorage, draw_debug, TPS};
-use crate::debug::{DebugCategory, DebugRendererImpl};
-use crate::ty::block_pos::BlockPos;
-use crate::ty::direction::Direction;
-use crate::ty::id::Id;
-use crate::ty::Offset;
-use crate::world::chunk::block::BlockPrototype;
-use crate::world::chunk::layer::BlockLayerPrototype;
-use crate::world::chunk::spread::BlockSpreaderPrototype;
 
-pub struct Spreader {
-	rand: Xoroshiro64Star,
-	active_spreads: HashMap<(BlockPos, Id<BlockLayerPrototype>), Id<BlockPrototype>>,
+use rand::SeedableRng;
+use rand_xoshiro::Xoroshiro64Star;
+
+use crate::{
+	debug::{DebugCategory, DebugRendererImpl},
+	draw_debug,
+	ty::{block_pos::BlockPos, id::Id},
+	world::chunk::{block::Block, layer::BlockLayer},
+	Api, ChunkStorage,
+};
+
+pub struct SpreaderSystem {
+	rand:           Xoroshiro64Star,
+	active_spreads: HashMap<(BlockPos, Id<BlockLayer>), Id<Block>>,
 }
 
-impl Spreader {
-	pub fn new() -> Spreader {
-		Spreader {
-			rand: Xoroshiro64Star::seed_from_u64(69420),
-			active_spreads: Default::default()
+impl SpreaderSystem {
+	pub fn new() -> SpreaderSystem {
+		SpreaderSystem {
+			rand:           Xoroshiro64Star::seed_from_u64(69420),
+			active_spreads: Default::default(),
 		}
 	}
 
-	pub fn tick(&mut self, api: &Api, chunks: &mut ChunkStorage, debug: &mut impl DebugRendererImpl) -> Vec<(BlockPos, Id<BlockLayerPrototype>, Id<BlockPrototype>)> {
+	pub fn tick(
+		&mut self,
+		api: &Api,
+		chunks: &mut ChunkStorage,
+		debug: &mut impl DebugRendererImpl,
+	) -> Vec<(BlockPos, Id<BlockLayer>, Id<Block>)> {
 		// Spread
 		let mut remove = Vec::new();
 		let mut spread = Vec::new();
@@ -33,7 +38,14 @@ impl Spreader {
 			if let Some(prototype) = &prototype.spread {
 				let result = prototype.tick_spread(*pos, *layer_id, chunks, &mut self.rand);
 				if let Some(result) = result.spread {
-					draw_debug!(debug, DebugCategory::TileSpread, result.0, 0xfcfcfa, 10.0, 1.0);
+					draw_debug!(
+						debug,
+						DebugCategory::TileSpread,
+						result.0,
+						0xfcfcfa,
+						10.0,
+						1.0
+					);
 					spread.push((result.0, *layer_id, result.1));
 				}
 
@@ -53,7 +65,13 @@ impl Spreader {
 		spread
 	}
 
-	pub fn place_block(&mut self, pos: BlockPos,  layer_id: Id<BlockLayerPrototype>, block_id: Id<BlockPrototype>, prototype: &BlockPrototype)  {
+	pub fn place_block(
+		&mut self,
+		pos: BlockPos,
+		layer_id: Id<BlockLayer>,
+		block_id: Id<Block>,
+		prototype: &Block,
+	) {
 		self.active_spreads.remove(&(pos, layer_id));
 		if prototype.spread.is_some() {
 			self.active_spreads.insert((pos, layer_id), block_id);

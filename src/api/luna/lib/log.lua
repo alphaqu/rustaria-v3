@@ -7,28 +7,33 @@ log = {}
 ---
 --- Designates very low priority, often extremely verbose, information.
 --- @param msg string
-function log.trace(msg) end
+function log.trace(msg)
+end
 
 --- Logs on the "debug" level.
 ---
 --- Designates lower priority information.
 --- @param msg string
-function log.debug(msg) end
+function log.debug(msg)
+end
 
 --- Logs on the "info" level.
 ---
 --- Designates useful information.
 --- @param msg string
-function log.info(msg) end
+function log.info(msg)
+end
 
 --- Logs on the "warn" level.
 ---
 --- Designates hazardous situations.
 --- @param msg string
-function log.warn(msg) end
+function log.warn(msg)
+end
 
 --- Logs on the "error" level.
 ---
 --- Designates very serious errors.
 --- @param msg string
-function log.error(msg) end
+function log.error(msg)
+end

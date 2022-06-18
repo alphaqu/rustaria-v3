@@ -1,13 +1,16 @@
-use mlua::{AnyUserData, FromLua, Lua, MetaMethod, ToLua, UserData, UserDataFields};
 use std::marker::PhantomData;
+
+use mlua::{AnyUserData, FromLua, Lua, MetaMethod, ToLua, UserData, UserDataFields};
+
 use crate::api::luna::glue::LuaGlue;
 
 pub struct GlueUserDataFields<'a, V: UserData, F: UserDataFields<LuaGlue<V>>> {
 	pub(crate) fields: &'a mut F,
-	pub(crate) data: PhantomData<V>,
+	pub(crate) data:   PhantomData<V>,
 }
 
-impl<'a, V: UserData, I: UserDataFields<LuaGlue<V>>> UserDataFields<V> for GlueUserDataFields<'a, V, I>
+impl<'a, V: UserData, I: UserDataFields<LuaGlue<V>>> UserDataFields<V>
+	for GlueUserDataFields<'a, V, I>
 {
 	fn add_field_method_get<S, R, M>(&mut self, name: &S, method: M)
 	where

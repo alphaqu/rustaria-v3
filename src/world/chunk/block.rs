@@ -1,64 +1,63 @@
 use std::collections::HashMap;
-use crate::api::prototype::{FactoryPrototype, LuaPrototype, Prototype};
-use crate::ty::id::Id;
-use crate::world::chunk::spread::{BlockSpreaderPrototype, LuaBlockSpreaderPrototype};
+
 use eyre::WrapErr;
-use crate::api::luna::table::LunaTable;
-use crate::ty::identifier::Identifier;
-use crate::util::blake3::Hasher;
+use tracing::error_span;
+
+use crate::{
+	api::{luna::table::LunaTable, prototype::Prototype},
+	ty::{id::Id, identifier::Identifier},
+	util::blake3::Hasher,
+	world::chunk::spread::{BlockSpreader, BlockSpreaderPrototype},
+};
 
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct BlockInstance {
+	pub id:        Id<Block>,
+	pub collision: bool,
+}
+
 pub struct Block {
-    pub id: Id<BlockPrototype>,
-    pub collision: bool,
+	pub collision: bool,
+	pub spread:    Option<BlockSpreader>,
+}
+
+impl Block {
+	pub fn create(&self, id: Id<Block>) -> BlockInstance {
+		BlockInstance {
+			id,
+			collision: self.collision,
+		}
+	}
 }
 
 pub struct BlockPrototype {
-    pub collision: bool,
-    pub spread: Option<BlockSpreaderPrototype>,
+	pub collision: bool,
+	pub spread:    Option<BlockSpreaderPrototype>,
 }
 
-impl Prototype for BlockPrototype {}
-
-impl FactoryPrototype for BlockPrototype {
-    type Item = Block;
-    fn create(&self, id: Id<Self>) -> Self::Item {
-        Block {
-            id,
-            collision: self.collision,
-        }
-    }
+impl BlockPrototype {
+	pub fn bake(self, blocks: &HashMap<Identifier, Id<Block>>) -> eyre::Result<Block> {
+		Ok(Block {
+			collision: self.collision,
+			spread:    if let Some(spread) = self.spread {
+				Some(spread.bake(blocks).wrap_err("Could not bake spreader")?)
+			} else {
+				None
+			},
+		})
+	}
 }
 
-pub struct LuaBlockPrototype {
-    pub collision: bool,
-    pub spread: Option<LuaBlockSpreaderPrototype>,
-}
+impl Prototype for BlockPrototype {
+	type Output = Block;
 
-impl LuaBlockPrototype {
-    pub fn bake(self, blocks: &HashMap<Identifier, Id<BlockPrototype>>) -> eyre::Result<BlockPrototype> {
-        Ok(BlockPrototype {
-            collision: self.collision,
-            spread: if let Some(spread) = self.spread {
-                Some(spread.bake(blocks).wrap_err("Could not bake spreader")?)
-            } else {
-                None
-            },
-        })
-    }
-}
+	fn get_name() -> &'static str { "block" }
 
-impl LuaPrototype for LuaBlockPrototype {
-    type Output = BlockPrototype;
-
-    fn get_name() -> &'static str {
-        "block"
-    }
-
-    fn from_lua(table: LunaTable, _: &mut Hasher) -> eyre::Result<Self> {
-        Ok(LuaBlockPrototype {
-            collision: table.get("collision")?,
-            spread: table.get("spread")?,
-        })
-    }
+	fn from_lua(table: LunaTable, _: &mut Hasher) -> eyre::Result<Self> {
+		let _span = error_span!(target: "lua", "block").entered();
+		Ok(BlockPrototype {
+			collision: table.get("collision")?,
+			spread:    table.get("spread")?,
+		})
+	}
 }

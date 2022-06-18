@@ -1,7 +1,6 @@
 //! https://github.com/BLAKE3-team/BLAKE3/blob/master/reference_impl/reference_impl.rs
 
-use core::cmp::min;
-use core::convert::TryInto;
+use core::{cmp::min, convert::TryInto};
 
 pub type Blake3Hash = [u8; 32];
 
@@ -177,9 +176,7 @@ impl ChunkState {
 		}
 	}
 
-	fn len(&self) -> usize {
-		BLOCK_LEN * self.blocks_compressed as usize + self.block_len as usize
-	}
+	fn len(&self) -> usize { BLOCK_LEN * self.blocks_compressed as usize + self.block_len as usize }
 
 	fn start_flag(&self) -> u32 {
 		if self.blocks_compressed == 0 {
@@ -259,11 +256,11 @@ fn parent_cv(
 
 /// An incremental hasher that can accept any number of writes.
 pub struct Hasher {
-	chunk_state: ChunkState,
-	key_words: [u32; 8],
-	cv_stack: [[u32; 8]; 54], // Space for 54 subtree chaining values:
-	cv_stack_len: u8,         // 2^54 * CHUNK_LEN = 2^64
-	flags: u32,
+	chunk_state:  ChunkState,
+	key_words:    [u32; 8],
+	cv_stack:     [[u32; 8]; 54], // Space for 54 subtree chaining values:
+	cv_stack_len: u8,             // 2^54 * CHUNK_LEN = 2^64
+	flags:        u32,
 }
 
 impl Hasher {
@@ -278,9 +275,7 @@ impl Hasher {
 	}
 
 	/// Construct a new `Hasher` for the regular hash function.
-	pub fn new() -> Self {
-		Self::new_internal(IV, 0)
-	}
+	pub fn new() -> Self { Self::new_internal(IV, 0) }
 
 	/// Construct a new `Hasher` for the keyed hash function.
 	pub fn new_keyed(key: &[u8; KEY_LEN]) -> Self {
@@ -359,7 +354,5 @@ impl Hasher {
 }
 
 impl Default for Hasher {
-	fn default() -> Self {
-		Self::new()
-	}
+	fn default() -> Self { Self::new() }
 }

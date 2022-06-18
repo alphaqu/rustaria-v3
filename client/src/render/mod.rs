@@ -1,3 +1,3 @@
 pub mod atlas;
-pub mod world;
 pub mod ty;
+pub mod world;
