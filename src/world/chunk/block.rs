@@ -1,61 +1,64 @@
 use std::collections::HashMap;
-use std::fmt::Debug;
-use mlua::{FromLua, Lua, Value};
-use tracing::{ trace};
+use crate::api::prototype::{FactoryPrototype, LuaPrototype, Prototype};
 use crate::ty::id::Id;
+use crate::world::chunk::spread::{BlockSpreaderPrototype, LuaBlockSpreaderPrototype};
+use eyre::WrapErr;
+use crate::api::luna::table::LunaTable;
 use crate::ty::identifier::Identifier;
-use crate::api::prototype::{FactoryPrototype, Prototype};
-use crate::api::util::lua_table;
+use crate::util::blake3::Hasher;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Block {
-	pub id: Id<BlockPrototype>,
-	pub collision: bool,
+    pub id: Id<BlockPrototype>,
+    pub collision: bool,
 }
 
-#[derive(Debug)]
 pub struct BlockPrototype {
-	pub collision: bool,
-	pub spread: Option<BlockSpreaderPrototype>,
+    pub collision: bool,
+    pub spread: Option<BlockSpreaderPrototype>,
 }
 
-impl Prototype for BlockPrototype {
-	fn get_name() -> &'static str {
-		"block"
-	}
-}
+impl Prototype for BlockPrototype {}
 
 impl FactoryPrototype for BlockPrototype {
-	type Item = Block;
-	fn create(&self, id: Id<Self>) -> Self::Item {
-		Block { id, collision: self.collision }
-	}
+    type Item = Block;
+    fn create(&self, id: Id<Self>) -> Self::Item {
+        Block {
+            id,
+            collision: self.collision,
+        }
+    }
 }
 
-impl FromLua for BlockPrototype {
-	fn from_lua(lua_value: Value, _: &Lua) -> mlua::Result<Self> {
-		let table = lua_table(lua_value)?;
-		Ok(BlockPrototype {
-			collision: table.get("collision")?,
-			spread: table.get("spread")?
-		})
-	}
+pub struct LuaBlockPrototype {
+    pub collision: bool,
+    pub spread: Option<LuaBlockSpreaderPrototype>,
 }
 
-#[derive(Debug)]
-pub struct BlockSpreaderPrototype {
-	pub chance: f32,
-	pub convert_table: HashMap<Identifier, Identifier>,
+impl LuaBlockPrototype {
+    pub fn bake(self, blocks: &HashMap<Identifier, Id<BlockPrototype>>) -> eyre::Result<BlockPrototype> {
+        Ok(BlockPrototype {
+            collision: self.collision,
+            spread: if let Some(spread) = self.spread {
+                Some(spread.bake(blocks).wrap_err("Could not bake spreader")?)
+            } else {
+                None
+            },
+        })
+    }
 }
 
-impl FromLua for BlockSpreaderPrototype {
-	fn from_lua(lua_value: Value, _: &Lua) -> mlua::Result<Self> {
-		trace!("FromLua BlockSpread");
+impl LuaPrototype for LuaBlockPrototype {
+    type Output = BlockPrototype;
 
-		let table = lua_table(lua_value)?;
-		Ok(BlockSpreaderPrototype {
-			chance: table.get("chance")?,
-			convert_table: table.get("convert_table")?
-		})
-	}
+    fn get_name() -> &'static str {
+        "block"
+    }
+
+    fn from_lua(table: LunaTable, _: &mut Hasher) -> eyre::Result<Self> {
+        Ok(LuaBlockPrototype {
+            collision: table.get("collision")?,
+            spread: table.get("spread")?,
+        })
+    }
 }

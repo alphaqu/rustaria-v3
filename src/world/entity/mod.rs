@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
 use eyre::Result;
 use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
 
-use crate::{Chunk, ChunkPos, ChunkStorage, iter_components};
+use crate::{ChunkStorage, iter_components};
 use crate::api::Api;
+use crate::api::prototype::FactoryPrototype;
+use crate::api::registry::{IdTable};
 use crate::ty::id::Id;
-use crate::api::prototype::{FactoryPrototype, Prototype};
-use crate::api::registry::MappedRegistry;
 use crate::debug::DebugRendererImpl;
 use crate::world::entity::prototype::EntityPrototype;
 use crate::world::entity::system::{GravitySystem, VelocitySystem};
@@ -20,14 +18,16 @@ pub mod prototype;
 
 pub struct EntityStorage {
 	world: hecs::World,
-	templates: MappedRegistry<EntityPrototype, EntityBuilder>,
+	templates: IdTable<EntityPrototype, EntityBuilder>,
 }
 
 impl EntityStorage {
 	pub fn new(api: &Api) -> EntityStorage {
 		EntityStorage {
 			world: Default::default(),
-			templates: api.carrier.entity.map(|_, id, prototype| prototype.create(id))
+			templates: api.carrier.entity.table.iter().map(|(id, prototype)| {
+				(id, prototype.create(id))
+			}).collect()
 		}
 	}
 

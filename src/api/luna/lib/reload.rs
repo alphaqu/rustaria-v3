@@ -1,12 +1,14 @@
 use mlua::prelude::LuaResult;
 use crate::api::luna::lib::stargate::Stargate;
+use apollo::*;
 
 pub struct Reload {
 	pub stargate: Stargate,
 	pub client: bool,
 }
 
-use apollo::*;
+impl Reload {
+}
 
 #[lua_impl]
 impl Reload {

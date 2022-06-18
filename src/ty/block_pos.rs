@@ -8,7 +8,7 @@ use crate::ty::chunk_pos::ChunkPos;
 use crate::ty::Error::OutOfBounds;
 use crate::ty::{Error, Offset};
 
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, Default)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlockPos {
     pub chunk: ChunkPos,
     pub entry: BlockLayerPos,

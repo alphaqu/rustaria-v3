@@ -20,11 +20,13 @@ pub mod spread;
 
 packet!(World(ServerBoundWorldPacket, ClientBoundWorldPacket));
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum ServerBoundWorldPacket {
 	RequestChunk(ChunkPos),
 	SetBlock(BlockPos, Id<BlockLayerPrototype>, Id<BlockPrototype>)
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum ClientBoundWorldPacket {
 	Chunk(ChunkPos, Chunk),
 	SetBlock(BlockPos, Id<BlockLayerPrototype>, Id<BlockPrototype>),
@@ -42,12 +44,12 @@ impl World {
 		Ok(World {
 			chunks: chunk,
 			entities: EntityWorld::new(api)?,
-			spreader: Spreader::new(api)
+			spreader: Spreader::new()
 		})
 	}
 
 	pub fn tick(&mut self, api: &Api, debug: &mut impl DebugRendererImpl) {
-		for (pos, layer_id,block_id) in self.spreader.tick(&mut self.chunks, debug) {
+		for (pos, layer_id,block_id) in self.spreader.tick(api, &mut self.chunks, debug) {
 			self.place_block(api, pos, layer_id, block_id);
 		};
 		// Entity
@@ -61,10 +63,10 @@ impl World {
 			let prototype = api.carrier.block_layer.get(layer_id);
 
 			// Block
-			let block_prototype = prototype.registry.get(block_id);
+			let block_prototype = prototype.blocks.get(block_id);
 			layer[pos.entry] = block_prototype.create(block_id);
 
-			self.spreader.place_block(pos, layer_id, block_id);
+			self.spreader.place_block(pos, layer_id, block_id, block_prototype);
 		}
 	}
 

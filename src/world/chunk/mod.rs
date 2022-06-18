@@ -2,8 +2,8 @@ use std::ops::{Index, IndexMut};
 
 
 use block::Block;
-use crate::api::registry::MappedRegistry;
 use layer::BlockLayerPrototype;
+use crate::api::registry::IdTable;
 
 use crate::ty::block_layer_pos::BlockLayerPos;
 
@@ -11,19 +11,20 @@ use crate::ty::block_layer_pos::BlockLayerPos;
 pub mod block;
 pub mod layer;
 pub mod storage;
+pub mod spread;
 
 pub const CHUNK_SIZE: usize = 16;
 pub const CHUNK_SIZE_F32: f32 = CHUNK_SIZE as f32;
 
 pub type BlockLayer = ChunkLayer<Block>;
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Chunk {
-	pub layers: MappedRegistry<BlockLayerPrototype, BlockLayer>,
+	pub layers: IdTable<BlockLayerPrototype, BlockLayer>,
 }
 
 // Layer
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChunkLayer<T: Clone> {
 	pub data: [[T; CHUNK_SIZE]; CHUNK_SIZE],
 }

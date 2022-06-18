@@ -25,11 +25,13 @@ macro_rules! packet {
     };
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum ServerBoundPacket {
     World(ServerBoundWorldPacket),
     Player(ServerBoundPlayerPacket),
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum ClientBoundPacket {
     World(ClientBoundWorldPacket),
     Player(ClientBoundPlayerPacket),

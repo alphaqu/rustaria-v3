@@ -1,6 +1,8 @@
+use std::collections::HashSet;
 use euclid::{Rect, size2, vec2};
 use mlua::{FromLua, Lua, LuaSerdeExt, Value};
-use rustaria::api::prototype::Prototype;
+use rustaria::api::luna::table::LunaTable;
+use rustaria::api::prototype::{LuaPrototype, Prototype};
 use rustaria::api::util::lua_table;
 use rustaria::world::chunk::ConnectionType;
 use rustaria::debug::{DebugCategory, DebugRendererImpl};
@@ -8,51 +10,60 @@ use rustaria::draw_debug;
 use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::identifier::Identifier;
 use rustaria::ty::WS;
+use rustaria::util::blake3::Hasher;
 use crate::Debug;
 use crate::render::atlas::Atlas;
 use crate::render::ty::mesh_builder::MeshBuilder;
 use crate::render::ty::vertex::PosTexVertex;
 use crate::render::world::chunk;
 
+
 #[derive(Debug)]
 pub struct BlockRendererPrototype {
-    pub image: Identifier,
+    pub image: Rect<f32, Atlas>,
     pub connection_type: ConnectionType,
-}
-impl BlockRendererPrototype {
-    pub fn create(&self, atlas: &Atlas) -> BlockRenderer {
-        BlockRenderer {
-            tex_pos:  atlas.get(&self.image),
-            connection_type: self.connection_type
-        }
-    }
-}
-
-impl FromLua for BlockRendererPrototype {
-    fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
-        let table = lua_table(lua_value)?;
-
-        Ok(BlockRendererPrototype {
-            image: table.get("image")?,
-            connection_type: lua.from_value(table.get("connection_type")?)?
-        })
-    }
 }
 
 impl Prototype for BlockRendererPrototype {
-    fn get_name() -> &'static str {
-        "block_renderer"
-    }
 }
 
-pub struct BlockRenderer {
-    pub tex_pos: Rect<f32, Atlas>,
+#[derive(Debug)]
+pub struct LuaBlockRendererPrototype {
+    pub image: Identifier,
     pub connection_type: ConnectionType,
 }
 
-impl BlockRenderer {
+impl LuaBlockRendererPrototype {
+    pub fn bake(&self, atlas: &Atlas) -> BlockRendererPrototype {
+        BlockRendererPrototype {
+            image: atlas.get(&self.image),
+            connection_type: self.connection_type
+        }
+    }
+
+    pub fn get_sprites(&self, sprites: &mut HashSet<Identifier>) {
+        sprites.insert(self.image.clone());
+    }
+}
+
+impl LuaPrototype for LuaBlockRendererPrototype {
+    type Output = BlockRendererPrototype;
+
+    fn get_name() -> &'static str {
+          "block_renderer"
+    }
+
+    fn from_lua(table: LunaTable, _: &mut Hasher) -> eyre::Result<Self> {
+       Ok(LuaBlockRendererPrototype {
+           image: table.get("image")?,
+           connection_type: table.get_ser("connection_type")?
+       })
+    }
+}
+
+impl BlockRendererPrototype {
     pub fn mesh(&self, pos: BlockPos, desc: &KindDesc, builder: &mut MeshBuilder<PosTexVertex>, debug: &mut Debug) {
-        let mut texture = self.tex_pos;
+        let mut texture = self.image;
 
         let variation = chunk::get_variation(pos) % ((texture.size.width / texture.size.height) as u32);
         let layout_width = texture.size.width / 3.0;

@@ -4,13 +4,16 @@ use eyre::Result;
 use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
 
 pub mod packet;
+pub mod util;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct Token();
 
+
+
 pub struct ServerNetwork {
-    sender: Sender<ClientBoundPacket>,
-    receiver: Receiver<ServerBoundPacket>,
+    pub sender: Sender<ClientBoundPacket>,
+    pub receiver: Receiver<ServerBoundPacket>,
 }
 
 impl ServerNetwork {

@@ -3,10 +3,9 @@ use std::collections::HashMap;
 use euclid::rect;
 use eyre::Result;
 use glium::{Blend, DrawParameters, Program, uniform};
-use mlua::LuaSerdeExt;
 
-use layer::BlockLayerRenderer;
-use rustaria::api::registry::MappedRegistry;
+use layer::BlockLayerRendererPrototype;
+use rustaria::api::registry::IdTable;
 use rustaria::world::chunk::layer::BlockLayerPrototype;
 use rustaria::world::chunk::storage::ChunkStorage;
 use rustaria::world::chunk::CHUNK_SIZE;
@@ -15,9 +14,9 @@ use rustaria::draw_debug;
 use rustaria::ty::block_pos::BlockPos;
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::direction::{Direction, DirMap};
+use rustaria::ty::id::Id;
 use rustaria::ty::Offset;
 
-use crate::render::atlas::Atlas;
 use crate::render::ty::mesh_buffer::MeshDrawer;
 use crate::render::ty::mesh_builder::MeshBuilder;
 use crate::render::ty::draw::Draw;
@@ -27,44 +26,42 @@ use crate::{ClientApi, Debug, Frontend};
 pub mod block;
 pub mod layer;
 
-type LayerRenderers = MappedRegistry<BlockLayerPrototype, Option<BlockLayerRenderer>>;
+
 pub struct WorldChunkRenderer {
-    chunk_renderers: HashMap<ChunkPos, ChunkRenderer>,
-    layer_renderers: LayerRenderers,
+    chunk_meshes: HashMap<ChunkPos, ChunkMesh>,
 }
 
 impl WorldChunkRenderer {
-    pub fn new(api: &ClientApi, frontend: &Frontend, atlas: &Atlas) -> Result<WorldChunkRenderer> {
+    pub fn new() -> Result<WorldChunkRenderer> {
         Ok(WorldChunkRenderer {
-            chunk_renderers: Default::default(),
-            layer_renderers: api.carrier.block_layer.map(|ident, id, prototype| {
-                let ident = api.carrier.block_layer.id_to_ident(id);
-                api.c_carrier
-                    .block_layer_renderer
-                    .ident_to_id(ident)
-                    .map(|id| {
-                        api.c_carrier
-                            .block_layer_renderer
-                            .get(id)
-                            .create(api, prototype, atlas)
-                    })
-            }),
+            chunk_meshes: Default::default(),
         })
+    }
+
+    pub fn dirty(&mut self) {
+       self.chunk_meshes.clear()
     }
 
     pub fn tick(
         &mut self,
+        frontend: &Frontend,
         chunks: &ChunkStorage,
     ) -> Result<()> {
         for pos in chunks.get_dirty() {
-            if let Some(renderer) = self.chunk_renderers.get_mut(pos) {
+            if let Some(renderer) = self.chunk_meshes.get_mut(pos) {
                 renderer.dirty = true;
+            } else  {
+                self.chunk_meshes.insert(*pos, ChunkMesh {
+                    drawer: frontend.create_drawer()?,
+                    builder: MeshBuilder::new(),
+                    dirty: true,
+                });
             }
         }
         Ok(())
     }
 
-    pub fn draw(&mut self, chunk: &ChunkStorage, program: &Program, draw: &mut Draw) -> Result<()> {
+    pub fn draw(&mut self, api: &ClientApi, chunk: &ChunkStorage, program: &Program, draw: &mut Draw) -> Result<()> {
         let uniforms = uniform! {
             screen_ratio: draw.frontend.aspect_ratio,
             atlas: &draw.atlas.texture,
@@ -93,11 +90,11 @@ impl WorldChunkRenderer {
                         16.0
                     ));
 
-                        if let Some(render) = self.chunk_renderers.get_mut(&pos){
-                            render.tick(pos, chunk, &self.layer_renderers, draw.debug)?;
+                        if let Some(render) = self.chunk_meshes.get_mut(&pos){
+                            render.tick(api, pos, chunk, &api.c_carrier.block_layer_renderer, draw.debug)?;
                             render.drawer.draw(draw.frame, program, &uniforms, &draw_parameters)?;
                         } else {
-                            self.chunk_renderers.insert(pos, ChunkRenderer {
+                            self.chunk_meshes.insert(pos, ChunkMesh {
                                 drawer: draw.frontend.create_drawer()?,
                                 builder: MeshBuilder::new(),
                                 dirty: true,
@@ -112,20 +109,15 @@ impl WorldChunkRenderer {
     }
 }
 
-pub struct ChunkRenderer {
+pub struct ChunkMesh {
     drawer: MeshDrawer<PosTexVertex>,
     builder: MeshBuilder<PosTexVertex>,
     dirty: bool,
 }
 
-impl ChunkRenderer {
+impl ChunkMesh {
     pub fn tick(
-        &mut self,
-        pos: ChunkPos,
-        chunks: &ChunkStorage,
-        renderers: &LayerRenderers,
-        debug: &mut Debug,
-    ) -> Result<()> {
+        &mut self, api: &ClientApi, pos: ChunkPos, chunks: &ChunkStorage, renderers: &IdTable<BlockLayerPrototype, Option<BlockLayerRendererPrototype>>, debug: &mut Debug,) -> Result<()> {
         if self.dirty {
             draw_debug!(
                 debug,

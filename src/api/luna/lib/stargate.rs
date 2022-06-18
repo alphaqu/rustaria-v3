@@ -6,7 +6,8 @@ use crate::world::chunk::layer::BlockLayerPrototype;
 use crate::world::entity::prototype::EntityPrototype;
 use mlua::prelude::LuaResult;
 use std::time::Instant;
-use mlua::{AnyUserData, Error};
+use eyre::WrapErr;
+use mlua::{AnyUserData, Error, Lua};
 use tracing::info;
 use type_map::TypeMap;
 
@@ -24,33 +25,22 @@ impl Stargate {
         }
     }
 
-    pub fn register_builder<P: Prototype>(&mut self) {
+    pub fn register_builder<P: LuaPrototype>(&mut self) {
         self.builders.insert(P::get_name().to_string(), LuaRegistryBuilder::new(RegistryBuilder::<P>::new()));
     }
 
-    pub fn build_registry<P: Prototype>(&mut self) -> Registry<P> {
+    pub fn build_registry<P: LuaPrototype>(&mut self, lua: &Lua, hasher: &mut Hasher) -> eyre::Result<Registry<P>> {
         self.builders
             .remove(P::get_name())
             .expect("Registry unregistered")
-            .build()
+            .build(lua, hasher).wrap_err_with(|| format!("Failed to create registry for {}s", P::get_name()))
     }
-
-    // *Carrier has arrived!* - Carrier
-    //pub fn build(&mut self) -> Carrier {
-    //    info!(
-    //        "Rustaria reloaded in {}ms",
-    //        self.start.elapsed().as_secs_f32() / 1000.0
-    //    );
-    //    Carrier {
-    //        block_layer: self.block_layer.build(),
-    //        entity: self.entity.build(),
-    //    }
-    //}
 }
 
-use crate::api::prototype::Prototype;
+use crate::api::prototype::{LuaPrototype, Prototype};
 use crate::api::registry::Registry;
 use apollo::*;
+use crate::util::blake3::Hasher;
 
 #[lua_impl]
 impl Stargate {

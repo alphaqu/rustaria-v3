@@ -9,11 +9,12 @@ use rustaria::network::packet::ClientBoundPacket;
 use rustaria::network::{new_networking, ClientNetwork};
 use rustaria::player::ServerBoundPlayerPacket;
 use rustaria::world::chunk::storage::ChunkStorage;
-use rustaria::world::{ClientBoundWorldPacket, World};
+use rustaria::world::World;
 use rustaria::Server;
 
 pub mod player;
 mod world;
+mod network;
 
 /// This exists when a client has joined a world.
 pub struct ClientGame {
@@ -23,7 +24,7 @@ pub struct ClientGame {
     player: PlayerSystem,
     world: ClientWorld,
 
-    renderer: WorldRenderer,
+    pub renderer: WorldRenderer,
 }
 
 impl ClientGame {
@@ -90,6 +91,7 @@ impl ClientGame {
 
     pub fn draw(
         &mut self,
+        api: &ClientApi,
         frontend: &Frontend,
         frame: &mut Frame,
         viewport: &Viewport,
@@ -97,6 +99,7 @@ impl ClientGame {
         timing: &Timing,
     ) -> Result<()> {
         self.renderer.draw(
+            api,
             frontend,
             &self.player,
             &self.world,
@@ -106,5 +109,10 @@ impl ClientGame {
             timing,
         )?;
         Ok(())
+    }
+
+    pub fn reset(&mut self) {
+        self.world.chunks.reset();
+        self.renderer.reset();
     }
 }

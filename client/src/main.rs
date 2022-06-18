@@ -18,6 +18,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 
 use debug::Debug;
 use render::ty::viewport::Viewport;
+use rustaria::debug::DebugCategory;
 use rustaria::TPS;
 use rustaria::ty::chunk_pos::ChunkPos;
 use rustaria::ty::identifier::Identifier;
@@ -54,7 +55,7 @@ fn main() -> Result<()> {
 
     color_eyre::install()?;
     let mut client = Client::new()?;
-    client.api.reload()?;
+    client.api.reload(&client.frontend)?;
     client.run()?;
     Ok(())
 }
@@ -72,8 +73,8 @@ impl Client {
         let run_dir = std::env::current_dir().wrap_err("Could not find current directory.")?;
         let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
         let mut debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
-        //debug.enable(DebugCategory::TileSpread);
-        //debug.enable(DebugCategory::EntityCollision);
+        debug.enable(DebugCategory::TileSpread);
+        debug.enable(DebugCategory::EntityCollision);
         //debug.enable(DebugCategory::ChunkMeshing);
         //debug.enable(DebugCategory::ChunkBorders);
 //
@@ -106,8 +107,13 @@ impl Client {
         let start = Instant::now();
         for event in self.frontend.poll_events() {
             if let WindowEvent::Key(Key::O, _, _, _) = event {
-                self.api.reload()?;
                 self.game = Some(self.join_world()?);
+            }
+            if let WindowEvent::Key(Key::R, _, _, _) = event {
+                self.api.reload(&self.frontend)?;
+                if let Some(game) = &mut self.game {
+                    game.renderer.reset();
+                }
             }
             if let Some(world) = &mut self.game {
                 world.event(&self.frontend, event);
@@ -140,7 +146,7 @@ impl Client {
             }
 
 
-            world.draw(&self.frontend, &mut frame, &self.viewport, &mut self.debug, timing)?;
+            world.draw(&self.api, &self.frontend, &mut frame, &self.viewport, &mut self.debug, timing)?;
         }
         self.debug.log_draw(start);
         self.debug.draw(&self.frontend, &self.viewport, &mut frame)?;
@@ -157,21 +163,21 @@ impl Client {
                     x: x as u32,
                     y: y as u32,
                 }, Chunk {
-                    layers: self.api.carrier.block_layer.map(|_, id, prototype| {
-                        let dirt = prototype.registry.create(
+                    layers: self.api.carrier.block_layer.table.iter().map(|(id, prototype)| {
+                        let dirt = prototype.blocks.create(
                             prototype
-                                .registry
-                                .ident_to_id(&Identifier::new("dirt"))
+                                .blocks
+                                .get_id(&Identifier::new("dirt"))
                                 .expect("where dirt"),
                         );
-                        let air = prototype.registry.create(
+                        let air = prototype.blocks.create(
                             prototype
-                                .registry
-                                .ident_to_id(&Identifier::new("air"))
+                                .blocks
+                                .get_id(&Identifier::new("air"))
                                 .expect("where air"),
                         );
 
-                        if x == 2 && y == 1 {
+                        (id, if x == 2 && y == 1 {
                             let a = air;
                             let d = dirt;
 
@@ -199,8 +205,8 @@ impl Client {
                             ChunkLayer::new_copy(air)
                         } else {
                             ChunkLayer::new_copy(dirt)
-                        }
-                    }),
+                        })
+                    }).collect(),
                 });
             }
         }

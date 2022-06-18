@@ -4,7 +4,7 @@ log.info(rustaria_hello);
 if reload.client then
     reload.stargate.entity_renderer:register {
         ["player"] = {
-            image = "image/entity/glisco.png",
+            image = "image/entity/alpha.png",
             panel = {
                 origin = { -0.9, -1.4 },
                 size = { 1.8, 2.8 }
@@ -15,7 +15,7 @@ if reload.client then
         ["tile"] = {
             get_rect = connected_blocks["tile"].get_rect,
             get_uv = connected_blocks["tile"].get_uv,
-            entries = {
+            blocks = {
                 ["dirt"] = {
                     image = "image/tile/dirt.png",
                     connection_type = "Connected"
@@ -37,7 +37,7 @@ if reload.client then
         [{ name = "wall", priority = 0 }] = {
             get_rect = connected_blocks["wall"].get_rect,
             get_uv = connected_blocks["wall"].get_uv,
-            entries = {
+            blocks = {
                 ["dirt"] = {
                     image = "image/wall/dirt.png",
                     connection_type = "Connected"
@@ -52,7 +52,7 @@ reload.stargate.block_layer:register {
     ["tile"] = {
         collision = true,
         default = "air",
-        entries = {
+        blocks = {
             ["dirt"] = {
                 collision = true,
             },
@@ -79,7 +79,7 @@ reload.stargate.block_layer:register {
     [{ name = "wall", priority = 0 }] = {
         default = "air",
         collision = false,
-        entries = {
+        blocks = {
             ["dirt"] = {
                 collision = true,
             },

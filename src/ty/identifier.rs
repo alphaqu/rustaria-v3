@@ -21,7 +21,6 @@ impl Identifier {
 
 impl FromLua for Identifier {
     fn from_lua(lua_value: Value, _: &Lua) -> mlua::Result<Self> {
-        trace!("FromLua Identifier");
         let string = util::lua_string(lua_value)?;
         if let Some((namespace, path)) = string.split_once(':') {
             Ok(Identifier {

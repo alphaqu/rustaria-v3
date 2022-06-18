@@ -2,7 +2,7 @@ use crate::world::chunk::CHUNK_SIZE;
 use crate::ty;
 use crate::ty::Offset;
 
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, Default)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct BlockLayerPos(u8);
 
 impl BlockLayerPos {

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use euclid::{point2, Rect, size2};
 use eyre::Result;
@@ -9,7 +9,7 @@ use rectangle_pack::{
 };
 use tracing::{error, trace, warn};
 
-use rustaria::api::{Resources, Api, ResourceKind};
+use rustaria::api::{Plugins, Api, ResourceKind};
 use rustaria::ty::identifier::Identifier;
 
 use crate::Frontend;
@@ -31,17 +31,17 @@ impl Atlas {
     pub fn new(
 	    frontend: &Frontend,
 	    api: &Api,
-	    image_locations: &[Identifier],
+	    image_locations: HashSet<Identifier>,
     ) -> Result<Atlas> {
         let mut images = HashMap::new();
         images.insert(Identifier::new("missing"), image::load_from_memory(include_bytes!("../builtin/missing.png"))?);
 
         // Load all images
         for location in image_locations {
-            if let Ok(image) = api.resources.get_resource(ResourceKind::Assets, location) {
+            if let Ok(image) = api.resources.get_resource(ResourceKind::Assets, &location) {
                 match image::load_from_memory(&image) {
                     Ok(image) => {
-                        images.insert(location.clone(), image);
+                        images.insert(location, image);
                     }
                     Err(error) => {
                         error!("Could not load image {location}: {}", error);

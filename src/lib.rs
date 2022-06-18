@@ -1,19 +1,20 @@
 #![allow(clippy::new_without_default)]
 
 use eyre::{Context, Result};
+use semver::Version;
 use tracing::info;
 
-use ty::chunk_pos::ChunkPos;
 use crate::api::Api;
+use ty::chunk_pos::ChunkPos;
 
-use world::chunk::storage::ChunkStorage;
-use world::chunk::Chunk;
 use crate::debug::DummyRenderer;
-use world::entity::EntityWorld;
 use crate::network::packet::ServerBoundPacket;
 use crate::network::ServerNetwork;
 use crate::player::PlayerSystem;
 use crate::world::World;
+use world::chunk::storage::ChunkStorage;
+use world::chunk::Chunk;
+use world::entity::EntityWorld;
 
 pub mod api;
 pub mod debug;
@@ -24,6 +25,7 @@ pub mod util;
 pub mod world;
 
 pub const TPS: usize = 60;
+pub const KERNEL_VERSION: Version = Version::new(0, 0, 1);
 
 pub struct Server {
     network: ServerNetwork,
@@ -37,14 +39,13 @@ impl Server {
         Ok(Server {
             network,
             player: PlayerSystem::new(api)?,
-            world
+            world,
         })
     }
 
     pub fn tick(&mut self, api: &Api) -> Result<()> {
         for (token, packet) in self.network.poll() {
             match packet {
-
                 ServerBoundPacket::Player(packet) => {
                     self.player.packet(token, packet, &mut self.world);
                 }

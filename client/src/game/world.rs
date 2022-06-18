@@ -43,12 +43,9 @@ impl ClientWorld {
         for y in y_min..y_max {
             for x in x_min..x_max {
                 if let Ok(pos) = ChunkPos::try_from((x, y)) {
-                    if !self.chunks.contains(pos) {
-                        if !self.requested_chunks.contains(&pos) {
-                            draw_debug!(debug, DebugCategory::Temporary, pos, 0xff0000, 4.0, 1.0);
-                            network.send(ServerBoundWorldPacket::RequestChunk(pos))?;
-                            self.requested_chunks.insert(pos);
-                        }
+                    if !self.chunks.contains(pos) && !self.requested_chunks.contains(&pos) {
+                        network.send(ServerBoundWorldPacket::RequestChunk(pos))?;
+                        self.requested_chunks.insert(pos);
                     }
                 }
             }
@@ -67,7 +64,6 @@ impl ClientWorld {
             ClientBoundWorldPacket::Chunk(chunk_pos, chunk) => {
                 self.inner.chunks.insert(chunk_pos, chunk);
                 self.requested_chunks.remove(&chunk_pos);
-                draw_debug!(debug, DebugCategory::Temporary, chunk_pos, 0xffffff, 4.0, 1.0);
             }
             ClientBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
                 self.place_block(api, pos, layer_id, block_id);

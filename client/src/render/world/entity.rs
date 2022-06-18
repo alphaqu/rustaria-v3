@@ -1,7 +1,6 @@
+use std::collections::HashSet;
 use euclid::{Rect, Vector2D};
-use mlua::{FromLua, Lua, LuaSerdeExt, Value};
-use rustaria::api::prototype::Prototype;
-use rustaria::api::util::lua_table;
+use rustaria::api::prototype::{LuaPrototype, Prototype};
 use rustaria::ty::identifier::Identifier;
 
 use crate::{ClientApi, Frontend, PlayerSystem};
@@ -13,33 +12,27 @@ use crate::render::ty::mesh_builder::MeshBuilder;
 use crate::render::ty::vertex::PosTexVertex;
 use eyre::Result;
 use glium::{Blend, DrawParameters, Program, uniform};
-use rustaria::api::registry::MappedRegistry;
+use rustaria::api::luna::table::LunaTable;
+use rustaria::ty::id::Id;
+use rustaria::util::blake3::Hasher;
 use rustaria::world::entity::component::{PhysicsComponent, PositionComponent, PrototypeComponent};
-use rustaria::world::entity::prototype::EntityPrototype;
 use rustaria::world::entity::EntityWorld;
 use crate::render::ty::draw::Draw;
 
 pub struct WorldEntityRenderer {
     drawer: MeshDrawer<PosTexVertex>,
-    renderers: MappedRegistry<EntityPrototype, Option<EntityRenderer>>
-
 }
 
 impl WorldEntityRenderer {
-    pub fn new(api: &ClientApi, frontend: &Frontend, atlas: &Atlas) -> Result<WorldEntityRenderer> {
+    pub fn new(frontend: &Frontend) -> Result<WorldEntityRenderer> {
         Ok(WorldEntityRenderer {
             drawer: frontend.create_drawer()?,
-            renderers: api.carrier.entity.map(|ident, _, _| {
-                api.c_carrier
-                    .entity_renderer
-                    .ident_to_id(ident)
-                    .map(|id| api.c_carrier.entity_renderer.get(id).create(atlas))
-            }),
         })
     }
 
     pub fn draw(
         &mut self,
+        api: &ClientApi,
         player: &PlayerSystem,
         entity: &EntityWorld,
         program: &Program,
@@ -51,7 +44,8 @@ impl WorldEntityRenderer {
             .query::<(&PositionComponent, &PrototypeComponent, &PhysicsComponent)>()
             .iter()
         {
-            if let Some(renderer) = self.renderers.get(prototype.id) {
+
+            if let Some(renderer) =  api.c_carrier.entity_renderer.get(prototype.id) {
                 // If this entity is our player, we use its predicted position instead of its server confirmed position.
                 let (mut position, mut vel) = (position.pos, physics.vel - physics.accel);
                 if let Some(player_entity) = player.server_player {
@@ -64,7 +58,6 @@ impl WorldEntityRenderer {
                         }
                     }
                 }
-
                 renderer.mesh((position - vel).lerp(position, draw.timing.delta()), &mut builder);
             }
         }
@@ -87,46 +80,52 @@ impl WorldEntityRenderer {
     }
 }
 
-pub struct EntityRendererPrototype {
+pub struct LuaEntityRendererPrototype {
     pub image: Identifier,
     pub panel: Rect<f32, WS>,
 }
 
-impl Prototype for EntityRendererPrototype {
-    fn get_name() -> &'static str {
-        "entity_renderer"
+impl LuaEntityRendererPrototype {
+    pub fn bake(&self, atlas: &Atlas) -> EntityRendererPrototype {
+        EntityRendererPrototype {
+            image: atlas.get(&self.image),
+            panel: self.panel,
+        }
+    }
+
+    pub fn get_sprites(&self, sprites: &mut HashSet<Identifier>) {
+        sprites.insert(self.image.clone());
     }
 }
 
-impl FromLua for EntityRendererPrototype {
-    fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
-        let table = lua_table(lua_value)?;
+impl LuaPrototype for LuaEntityRendererPrototype {
+    type Output = EntityRendererPrototype;
 
-        Ok(EntityRendererPrototype {
+    fn get_name() -> &'static str {
+        "entity_renderer"
+    }
+
+    fn from_lua(table: LunaTable, _: &mut Hasher) -> Result<Self> {
+        Ok(LuaEntityRendererPrototype {
             image: table.get("image")?,
-            panel: lua.from_value(table.get("panel")?)?,
+            panel: table.get_ser("panel")?,
         })
     }
 }
 
-impl EntityRendererPrototype {
-    pub fn create(&self, atlas: &Atlas) -> EntityRenderer {
-        EntityRenderer {
-            tex_pos: atlas.get(&self.image),
-            panel: self.panel,
-        }
-    }
-}
-
-pub struct EntityRenderer {
-    pub tex_pos: Rect<f32, Atlas>,
+pub struct EntityRendererPrototype {
+    pub image: Rect<f32, Atlas>,
     pub panel: Rect<f32, WS>,
 }
 
-impl EntityRenderer {
+impl EntityRendererPrototype {
     pub fn mesh(&self, pos: Vector2D<f32, WS>, builder: &mut MeshBuilder<PosTexVertex>) {
         let mut rect = self.panel;
         rect.origin += pos;
-        builder.push_quad((rect, self.tex_pos));
+        builder.push_quad((rect, self.image));
     }
+}
+
+impl Prototype for EntityRendererPrototype {
+
 }

@@ -17,17 +17,19 @@ use crate::ty::WS;
 
 packet!(Player(ServerBoundPlayerPacket, ClientBoundPlayerPacket));
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum ServerBoundPlayerPacket {
     SetMove(u32, PlayerCommand),
     Join(),
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum ClientBoundPlayerPacket {
     RespondPos(u32, Option<Vector2D<f32, WS>>),
     Joined(Entity)
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PlayerCommand {
     pub dir: Vector2D<f32, WS>,
     pub jumping: bool,
@@ -47,9 +49,9 @@ impl PlayerSystem {
             players: Default::default(),
             response_requests: vec![],
             joined: Default::default(),
-            player_entity: api.carrier
+            player_entity: *api.carrier
                 .entity
-                .ident_to_id(&Identifier::new("player"))
+                .ident_to_id.get(&Identifier::new("player"))
                 .wrap_err("Could not find Player entity")?,
         })
     }

@@ -58,6 +58,7 @@ impl ChunkStorage {
 			return None;
 		}
 
+		self.dirty.insert(pos);
 		self.chunks.insert(pos, chunk)
 	}
 
@@ -67,6 +68,11 @@ impl ChunkStorage {
 
 	pub fn reset_dirty(&mut self) {
 		self.dirty.clear();
+	}
+
+	pub fn reset(&mut self) {
+		self.reset_dirty();
+		self.chunks.clear();
 	}
 
 	#[inline(always)]

@@ -62,10 +62,10 @@ pub enum Press {
 
 impl PlayerSystem {
     pub fn new(api: &Api) -> Result<Self> {
-        let layer_id = api.carrier.block_layer.ident_to_id(&Identifier::new("tile")).unwrap();
+        let layer_id = api.carrier.block_layer.get_id(&Identifier::new("tile")).unwrap();
         let layer = api.carrier.block_layer.get(layer_id);
-        let place_block = layer.registry.ident_to_id(&Identifier::new("corrupt_grass")).unwrap();
-        let remove_block = layer.registry.ident_to_id(&Identifier::new("air")).unwrap();
+        let place_block = layer.blocks.get_id(&Identifier::new("dirt")).unwrap();
+        let remove_block = layer.blocks.get_id(&Identifier::new("air")).unwrap();
 
         Ok(Self {
             server_player: None,
@@ -85,7 +85,7 @@ impl PlayerSystem {
             tick: 0,
             player_entity: api.carrier
                 .entity
-                .ident_to_id(&Identifier::new("player"))
+                .get_id(&Identifier::new("player"))
                 .wrap_err("Player where")?,
             presses: vec![],
             layer_id,

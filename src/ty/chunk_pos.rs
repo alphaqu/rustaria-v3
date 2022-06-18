@@ -7,7 +7,7 @@ use crate::ty::{Error, Offset};
 use crate::ty::direction::Direction;
 
 // ======================================== POSITION ========================================
-#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Default, Hash)]
+#[derive(Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Debug, Default, Hash, serde::Serialize, serde::Deserialize)]
 pub struct ChunkPos {
     pub x: u32,
     pub y: u32,

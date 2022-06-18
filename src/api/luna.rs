@@ -1,12 +1,13 @@
 pub mod lib;
 pub mod glue;
+pub mod table;
 
 use std::fmt::Write;
 use eyre::{Result, WrapErr};
 use mlua::{Chunk, Lua, Table};
 use mlua::prelude::LuaError;
 use tracing::debug;
-use crate::api::{ResourceKind, Resources};
+use crate::api::{ResourceKind, Plugins};
 use crate::ty::identifier::Identifier;
 
 /// Holds everything luna.
@@ -15,7 +16,7 @@ pub struct Luna {
 }
 
 impl Luna {
-	pub fn new(resources: &Resources) -> Result<Luna> {
+	pub fn new(resources: &Plugins) -> Result<Luna> {
 		let lua = Lua::new();
 		lib::register(&lua).wrap_err("Failed to register lua")?;
 

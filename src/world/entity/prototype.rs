@@ -1,13 +1,12 @@
-use euclid::Rect;
 use hecs::EntityBuilder;
-use mlua::{FromLua, Lua, LuaSerdeExt, Value};
+use mlua::{FromLua, Lua, LuaSerdeExt, Table, Value};
+use crate::api::luna::table::LunaTable;
 
 use crate::ty::id::Id;
-use crate::ty::identifier::Identifier;
-use crate::api::prototype::{FactoryPrototype, Prototype};
+use crate::api::prototype::{FactoryPrototype, LuaPrototype, Prototype};
 use crate::api::util;
+use crate::util::blake3::Hasher;
 use crate::world::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent, PrototypeComponent};
-use crate::ty::WS;
 
 #[derive(Debug)]
 pub struct EntityPrototype {
@@ -18,10 +17,26 @@ pub struct EntityPrototype {
     pub gravity: Option<GravityComponent>,
 }
 
-impl Prototype for EntityPrototype {
+impl LuaPrototype for EntityPrototype {
+    type Output = EntityPrototype;
+
     fn get_name() -> &'static str {
         "entity"
     }
+
+    fn from_lua(table: LunaTable, _: &mut Hasher) -> eyre::Result<Self> {
+        Ok(EntityPrototype {
+            position: table.get_ser("position")?,
+            velocity: table.get_ser("velocity")?,
+            collision:  table.get_ser("collision")?,
+            humanoid: table.get_ser("humanoid")?,
+            gravity: table.get_ser("gravity")?
+        })
+    }
+}
+
+impl Prototype for EntityPrototype {
+
 }
 impl FactoryPrototype for EntityPrototype {
     type Item = EntityBuilder;

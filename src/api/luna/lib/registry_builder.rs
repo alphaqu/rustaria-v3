@@ -1,90 +1,122 @@
-use std::any::{Any, type_name};
-use std::collections::HashMap;
-use std::mem;
-use std::ops::Deref;
-use mlua::prelude::{LuaError, LuaResult};
-use mlua::{FromLua, Lua, Table, Value};
-use tracing::{debug, trace};
-use crate::api::prototype::Prototype;
+use crate::api::prototype::{LuaPrototype, Prototype};
 use crate::api::registry::Registry;
 use crate::ty::identifier::Identifier;
+use eyre::{Context, Report};
+use mlua::prelude::{LuaError, LuaResult};
+use mlua::{FromLua, Lua, Table, Value};
+use std::any::{type_name, Any};
+use std::collections::HashMap;
+use std::marker::PhantomData;
+use std::mem;
+use std::ops::Deref;
+use fxhash::FxHashMap;
+use tracing::{debug, trace};
 
 const DEFAULT_PRIORITY: f32 = 69420.0;
 
-pub struct RegistryBuilder<P: Prototype> {
-	entries: HashMap<Identifier, (f32, P)>
+pub struct RegistryBuilder<P: LuaPrototype> {
+    tables: Vec<Table>,
+    _p: PhantomData<P>,
 }
 
-impl<P: Prototype> RegistryBuilder<P> {
-	pub fn new() -> RegistryBuilder<P> {
-		RegistryBuilder {
-			entries: HashMap::new()
-		}
-	}
+impl<P: LuaPrototype> RegistryBuilder<P> {
+    pub fn new() -> RegistryBuilder<P> {
+        RegistryBuilder {
+            tables: vec![],
+            _p: Default::default(),
+        }
+    }
 
-	pub fn register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
-		for value in value.pairs::<Value, Value>() {
-			let (identifier, prototype) = value?;
-			let (identifier, priority) = match identifier {
-				val @ Value::String(_) => {
-					(Identifier::from_lua(val, lua)?, DEFAULT_PRIORITY)
-				}
-				Value::Table(table) => {
-					(table.get::<_, Identifier>("name")?, table.get::<_, Option<f32>>("priority")?.unwrap_or(DEFAULT_PRIORITY))
-				}
-				_ => return Err(LuaError::external("Registry type must be Table { name = , priority = } or an identifier")),
-			};
+    pub fn register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
+        self.tables.push(value);
+        Ok(())
+    }
 
-			debug!("{}: Adding {identifier}", type_name::<P>());
-			self.entries.insert(identifier, (priority, lua.unpack(prototype)?));
-		}
-		Ok(())
-	}
+    pub fn build(&mut self, lua: &Lua, hasher: &mut Hasher) -> eyre::Result<Registry<P>> {
+        let mut values = FxHashMap::default();
+        for table in &self.tables {
+            for value in table.clone().pairs::<Value, Value>() {
+                let (key, value) = value?;
+                let (identifier, priority) = Self::get_prototype_entry_key(lua, key).wrap_err("Failed to get registry entry key.")?;
+                let prototype = Self::get_prototype(lua, hasher, value).wrap_err_with(|| format!("Failed to create prototype {}", identifier))?;
+                values.insert(identifier, (priority, prototype));
+            }
+        }
+        Ok(Registry::new(values, hasher))
+    }
 
-	pub fn build(&mut self) -> Registry<P> {
-		let mut out = HashMap::new();
-		mem::swap(&mut self.entries, &mut out);
-		Registry::new(out)
-	}
+    fn get_prototype(
+        lua: &Lua,
+        hasher: &mut Hasher,
+        value: Value,
+    ) -> eyre::Result<P> {
+        let table = lua_table(value)?;
+        let prototype = P::from_lua(LunaTable { lua, table }, hasher)?;
+        Ok(prototype)
+    }
+
+    fn get_prototype_entry_key(lua: &Lua, key: Value) -> eyre::Result<(Identifier, f32)> {
+       Ok(match key {
+           val @ Value::String(_) => (Identifier::from_lua(val, lua)?, DEFAULT_PRIORITY),
+           Value::Table(table) => (
+               table.get::<_, Identifier>("name")?,
+               table
+                   .get::<_, Option<f32>>("priority")?
+                   .unwrap_or(DEFAULT_PRIORITY),
+           ),
+           _ => {
+               return Err(Report::msg(
+                   "Registry type must be Table { name = , priority = } or an identifier",
+               ))
+           }
+       })
+    }
 }
 
+use crate::api::luna::table::LunaTable;
+use crate::api::util::lua_table;
+use crate::util::blake3::Hasher;
 use apollo::*;
 
 pub trait DynRegistryBuilder {
-	fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()>;
-	fn  build(&mut self) -> Box<dyn Any>;
+    fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()>;
+    fn build(&mut self, lua: &Lua, hasher: &mut Hasher) -> Box<dyn Any>;
 }
 
-impl<P: Prototype> DynRegistryBuilder for RegistryBuilder<P> {
-	fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
-		self.register(lua, value)
-	}
+impl<P: LuaPrototype> DynRegistryBuilder for RegistryBuilder<P> {
+    fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
+        self.register(lua, value)
+    }
 
-	fn build(&mut self) -> Box<dyn Any> {
-		Box::new(self.build())
-	}
+    fn build(&mut self, lua: &Lua, hasher: &mut Hasher) -> Box<dyn Any> {
+        Box::new(self.build(lua, hasher))
+    }
 }
 
 pub struct LuaRegistryBuilder {
-	inner: Box<dyn DynRegistryBuilder>,
+    inner: Box<dyn DynRegistryBuilder>,
 }
 
 impl LuaRegistryBuilder {
-	pub fn new<P: Prototype>(inner: RegistryBuilder<P>) -> LuaRegistryBuilder  {
-		LuaRegistryBuilder {
-			inner: Box::new(inner)
-		}
-	}
+    pub fn new<P: LuaPrototype>(inner: RegistryBuilder<P>) -> LuaRegistryBuilder {
+        LuaRegistryBuilder {
+            inner: Box::new(inner),
+        }
+    }
 
-	pub fn build<P: Prototype>(mut self) -> Registry<P> {
-		*self.inner.build().downcast::<Registry<P>>().expect("we fucked up hard with downcasting here")
-	}
+    pub fn build<P: LuaPrototype>(mut self, lua: &Lua, hasher: &mut Hasher) -> eyre::Result<Registry<P>> {
+        *self
+            .inner
+            .build(lua,hasher)
+            .downcast::<eyre::Result<Registry<P>>>()
+            .expect("we fucked up hard with downcasting here")
+    }
 }
 
 #[lua_impl]
 impl LuaRegistryBuilder {
-	#[lua_method(register)]
-	pub fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
-		self.inner.lua_register(lua, value)
-	}
+    #[lua_method(register)]
+    pub fn lua_register(&mut self, lua: &Lua, value: Table) -> LuaResult<()> {
+        self.inner.lua_register(lua, value)
+    }
 }
