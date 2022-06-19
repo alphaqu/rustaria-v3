@@ -2,11 +2,11 @@ use std::{collections::HashMap, io, io::ErrorKind, path::PathBuf, sync::Arc};
 
 use eyre::{Context, Result};
 use rayon::{ThreadPool, ThreadPoolBuilder};
-use tracing::{debug, info};
+use tracing::{info};
 
 use crate::{
 	api::{
-		luna::{glue::Glue, lib::reload::Reload, Luna},
+		luna::{lib::reload::Reload, Luna},
 		plugin::Plugin,
 		registry::Registry,
 	},
@@ -18,6 +18,9 @@ use crate::{
 		entity::prototype::{EntityDesc, EntityPrototype},
 	},
 };
+
+use apollo::impl_macro::*;
+use apollo::{LuaScope};
 
 pub mod id_table;
 pub mod luna;
@@ -34,7 +37,13 @@ pub struct Api {
 	pub hash: Option<Blake3Hash>,
 }
 
+#[lua_impl]
 impl Api {
+	#[lua_field(get carrier)]
+	pub fn get_carrier(&self) -> &Carrier {
+		&self.carrier
+	}
+
 	pub fn new(run_dir: PathBuf, extra: Vec<PathBuf>) -> Result<Api> {
 		let plugins_path = run_dir.join("./plugins");
 		if !plugins_path.exists() {
@@ -84,8 +93,8 @@ impl Api {
 		reload.stargate.register_builder::<EntityPrototype>();
 
 		{
-			let glue = Glue::new(reload);
-			self.luna.lua.globals().set("reload", glue.clone())?;
+			let reload_scope = LuaScope::from(&mut *reload);
+			self.luna.lua.globals().set("reload", reload_scope.lua())?;
 
 			for plugin in self.resources.plugins.values() {
 				info!("Reloading {}", &plugin.id);
@@ -98,6 +107,7 @@ impl Api {
 						plugin.id
 					))?;
 
+			//	let ptr_mut = LuaGluePtrMut::new(reload);
 				self.luna.load(&identifier, &data)?.exec()?;
 			}
 		}
@@ -171,3 +181,16 @@ multi_deref_fields!(Carrier {
 	block_layer: Registry<BlockLayer>,
 	entity: Registry<EntityDesc>
 });
+
+#[lua_impl]
+impl Carrier {
+	#[lua_field(get block_layer)]
+	pub fn get_block_layer(&self) -> &Registry<BlockLayer> {
+		&self.block_layer
+	}
+
+	#[lua_field(get entity)]
+	pub fn get_entity(&self) -> &Registry<EntityDesc> {
+		&self.entity
+	}
+}

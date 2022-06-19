@@ -20,8 +20,7 @@ semver = { version = "1.0.10", features = ["serde"] }
 toml = "0.5.9"
 
 # Lua
-apollo = { path = "./libs/apollo" }
-mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
+apollo = { path = "./libs/apollo", features = ["luajit", "vendored", "serialize", "send", "macro"] }
 
 # Networking
 laminar = "0.5.0"
@@ -48,5 +47,6 @@ type-map = "0.5"
 [workspace]
 members = [
     "client",
-    "libs/apollo"
+    "libs/apollo",
+    "libs/apollo-macro",
 ]

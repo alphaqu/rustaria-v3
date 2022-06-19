@@ -7,7 +7,7 @@ use euclid::{vec2, Vector2D};
 use Direction::*;
 
 // ======================================== DIRECTION ========================================
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Direction {
 	Up,
 	Left,

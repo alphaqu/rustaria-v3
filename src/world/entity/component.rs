@@ -1,9 +1,11 @@
 use euclid::{Rect, Vector2D};
+use apollo::{FromLua, Function, Lua, LuaSerdeExt, Value};
 
 use crate::{
 	ty::{direction::DirMap, id::Id, WS},
 	world::entity::prototype::EntityDesc,
 };
+use crate::api::util::lua_table;
 
 /// Our lovely components
 #[macro_export]
@@ -56,14 +58,25 @@ pub struct PositionComponent {
 	pub pos: Vector2D<f32, WS>,
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
-#[serde(transparent)]
+#[derive(Debug, Clone)]
 pub struct CollisionComponent {
 	pub collision_box: Rect<f32, WS>,
-	#[serde(skip)]
+	pub hit_callback: Option<Function>,
+	// not serialized
 	pub collided: DirMap<bool>,
-	#[serde(skip)]
 	pub collisions: Vec<(Rect<f32, WS>, f32)>,
+}
+
+impl FromLua for CollisionComponent {
+	fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self> {
+		let table = lua_table(lua_value)?;
+		Ok(CollisionComponent {
+			collision_box: lua.from_value(table.get("collision_box")?)?,
+			hit_callback: table.get("hit_callback")?,
+			collided: Default::default(),
+			collisions: vec![]
+		})
+	}
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]

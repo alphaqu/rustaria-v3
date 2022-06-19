@@ -2,6 +2,7 @@ use std::any::type_name;
 use std::cmp::Ordering;
 
 use fxhash::{FxBuildHasher, FxHashMap};
+use apollo::{ToLua, UserData};
 use tracing::trace;
 
 use crate::{
@@ -9,6 +10,7 @@ use crate::{
 	ty::{id::Id, identifier::Identifier},
 };
 use crate::util::blake3::Hasher;
+use apollo::impl_macro::*;
 
 pub struct Registry<I> {
 	pub table: IdTable<I, I>,
@@ -58,7 +60,7 @@ impl<I> Registry<I> {
 		values
 			.into_iter()
 			.enumerate()
-			.map(|(id, ((identifier, priority), value))| unsafe {
+			.map(|(id, ((identifier, _), value))| unsafe {
 				trace!(target: "registry", "Registered {} \"{}\"", type_name::<I>().split("::").last().expect("what"), identifier);
 
 				(Id::<I>::new(id), identifier, value)
@@ -72,6 +74,19 @@ impl<I> Registry<I> {
 			hasher.update(identifier.path.as_bytes());
 			hasher.update(identifier.namespace.as_bytes());
 		}
+	}
+}
+
+#[lua_impl]
+impl<I: 'static + UserData + ToLua + Send> Registry<I> {
+	#[lua_method(get)]
+	pub fn lua_get(&self, id: Id<I>) -> &I {
+		self.get(id)
+	}
+
+	#[lua_method(get_identifier)]
+	pub fn lua_get_identifier(&self, id: Id<I>) -> &Identifier {
+		self.get_identifier(id)
 	}
 }
 

@@ -25,8 +25,7 @@ hecs = "0.7.6"
 rustaria = { path = "../" }
 
 # Lua
-apollo = { path = "../libs/apollo" }
-mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
+apollo = { path = "../libs/apollo", features = ["luajit", "vendored", "serialize", "send", "macro"] }
 
 # Rendering
 glfw = { version = "0.45.0", features = ["image"] }

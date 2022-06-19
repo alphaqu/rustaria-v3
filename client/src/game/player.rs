@@ -11,10 +11,11 @@ use rustaria::{
 	player::{ClientBoundPlayerPacket, PlayerCommand, ServerBoundPlayerPacket},
 	ty::{block_pos::BlockPos, id::Id, identifier::Identifier, WS},
 	world::{
-		chunk::{block::Block, layer::BlockLayer, storage::ChunkStorage},
+		chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage},
 		entity::{
 			component::{HumanoidComponent, PositionComponent},
 			prototype::EntityDesc,
+			system::network::EntityComponentPacket,
 			EntityWorld,
 		},
 		ServerBoundWorldPacket, World,
@@ -51,12 +52,14 @@ pub struct PlayerSystem {
 	presses: Vec<Press>,
 
 	layer_id: Id<BlockLayer>,
-	place_block: Id<Block>,
-	remove_block: Id<Block>,
+	place_block: Id<BlockDesc>,
+	remove_block: Id<BlockDesc>,
+	arrow: Id<EntityDesc>,
 }
 
 pub enum Press {
-	Use(f32, f32, Id<Block>),
+	Use(f32, f32, Id<BlockDesc>),
+	SpawnEntity(f32, f32, Id<EntityDesc>),
 }
 
 impl PlayerSystem {
@@ -69,6 +72,11 @@ impl PlayerSystem {
 		let layer = api.carrier.block_layer.get(layer_id);
 		let place_block = layer.blocks.get_id(&Identifier::new("dirt")).unwrap();
 		let remove_block = layer.blocks.get_id(&Identifier::new("air")).unwrap();
+		let arrow = api
+			.carrier
+			.entity
+			.get_id(&Identifier::new("arrow"))
+			.unwrap();
 
 		Ok(Self {
 			server_player: None,
@@ -95,6 +103,7 @@ impl PlayerSystem {
 			layer_id,
 			place_block,
 			remove_block,
+			arrow,
 		})
 	}
 
@@ -117,6 +126,7 @@ impl PlayerSystem {
 				match button {
 					MouseButton::Button1 => self.presses.push(Press::Use(x, y, self.place_block)),
 					MouseButton::Button2 => self.presses.push(Press::Use(x, y, self.remove_block)),
+					MouseButton::Button3 => self.presses.push(Press::SpawnEntity(x, y, self.arrow)),
 					_ => {}
 				}
 			}
@@ -195,6 +205,14 @@ impl PlayerSystem {
 									tile,
 								))?;
 							}
+						}
+						Press::SpawnEntity(x, y, entity) => {
+							network.send(ServerBoundWorldPacket::SpawnEntity(
+								entity,
+								vec![EntityComponentPacket::Pos {
+									set_pos: vec2(x, y)  + viewport.pos,
+								}],
+							))?;
 						}
 					}
 				}

@@ -12,6 +12,7 @@ use crate::{
 
 pub mod collision;
 pub mod humanoid;
+pub mod network;
 
 pub struct VelocitySystem;
 

@@ -7,13 +7,13 @@ use crate::{
 	debug::{DebugCategory, DebugRendererImpl},
 	draw_debug,
 	ty::{block_pos::BlockPos, id::Id},
-	world::chunk::{block::Block, layer::BlockLayer},
+	world::chunk::{block::BlockDesc, layer::BlockLayer},
 	Api, ChunkStorage,
 };
 
 pub struct SpreaderSystem {
 	rand: Xoroshiro64Star,
-	active_spreads: HashMap<(BlockPos, Id<BlockLayer>), Id<Block>>,
+	active_spreads: HashMap<(BlockPos, Id<BlockLayer>), Id<BlockDesc>>,
 }
 
 impl SpreaderSystem {
@@ -29,7 +29,7 @@ impl SpreaderSystem {
 		api: &Api,
 		chunks: &mut ChunkStorage,
 		debug: &mut impl DebugRendererImpl,
-	) -> Vec<(BlockPos, Id<BlockLayer>, Id<Block>)> {
+	) -> Vec<(BlockPos, Id<BlockLayer>, Id<BlockDesc>)> {
 		// Spread
 		let mut remove = Vec::new();
 		let mut spread = Vec::new();
@@ -69,8 +69,8 @@ impl SpreaderSystem {
 		&mut self,
 		pos: BlockPos,
 		layer_id: Id<BlockLayer>,
-		block_id: Id<Block>,
-		prototype: &Block,
+		block_id: Id<BlockDesc>,
+		prototype: &BlockDesc,
 	) {
 		self.active_spreads.remove(&(pos, layer_id));
 		if prototype.spread.is_some() {

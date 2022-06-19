@@ -110,7 +110,7 @@ impl PlayerSystem {
 	) {
 		match packet {
 			ServerBoundPlayerPacket::SetMove(tick, speed) => {
-				if let Some(player) = self.get_player_entity(token, &mut world.entities) {
+				if let Some(player) = self.get_player_entity(token, &world.entities) {
 					let mut component = player
 						.get_mut::<HumanoidComponent>()
 						.expect("Player does not have velocity");

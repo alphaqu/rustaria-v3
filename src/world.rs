@@ -1,5 +1,6 @@
-use chunk::{block::Block, layer::BlockLayer};
+use chunk::{block::BlockDesc, layer::BlockLayer};
 use eyre::Result;
+use hecs::Entity;
 
 use crate::{
 	debug::DebugRendererImpl,
@@ -9,6 +10,8 @@ use crate::{
 	world::spread::SpreaderSystem,
 	Api, Chunk, ChunkPos, ChunkStorage, EntityWorld, ServerNetwork,
 };
+use crate::world::entity::prototype::EntityDesc;
+use crate::world::entity::system::network::{EntityComponentPacket, EntityPacket};
 
 pub mod chunk;
 pub mod entity;
@@ -19,13 +22,17 @@ packet!(World(ServerBoundWorldPacket, ClientBoundWorldPacket));
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ServerBoundWorldPacket {
 	RequestChunk(ChunkPos),
-	SetBlock(BlockPos, Id<BlockLayer>, Id<Block>),
+	SetBlock(BlockPos, Id<BlockLayer>, Id<BlockDesc>),
+	SpawnEntity(Id<EntityDesc>, Vec<EntityComponentPacket>),
+	UpdateEntity(EntityPacket),
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ClientBoundWorldPacket {
 	Chunk(ChunkPos, Chunk),
-	SetBlock(BlockPos, Id<BlockLayer>, Id<Block>),
+	SetBlock(BlockPos, Id<BlockLayer>, Id<BlockDesc>),
+	SpawnEntity(Entity, Id<EntityDesc>),
+	UpdateEntity(EntityPacket),
 }
 
 pub struct World {
@@ -57,7 +64,7 @@ impl World {
 		api: &Api,
 		pos: BlockPos,
 		layer_id: Id<BlockLayer>,
-		block_id: Id<Block>,
+		block_id: Id<BlockDesc>,
 	) {
 		if let Some(chunk) = self.chunks.get_mut(pos.chunk) {
 			// Layer
@@ -91,6 +98,23 @@ impl World {
 			}
 			ServerBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
 				self.place_block(api, pos, layer_id, block_id);
+			}
+			ServerBoundWorldPacket::SpawnEntity(id, packets) => {
+				let entity = self.entities.storage.push(api, id);
+				network.send(token, ClientBoundWorldPacket::SpawnEntity(entity, id))?;
+				for packet in packets {
+					let packet = EntityPacket {
+						entity,
+						component: packet
+					};
+					self.entities.packet(&packet);
+					network.send(token, ClientBoundWorldPacket::UpdateEntity(packet))?;
+				}
+
+			}
+			ServerBoundWorldPacket::UpdateEntity(packet) => {
+				self.entities.packet(&packet);
+				network.send(token, ClientBoundWorldPacket::UpdateEntity(packet))?;
 			}
 		}
 		Ok(())

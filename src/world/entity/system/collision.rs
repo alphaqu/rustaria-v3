@@ -1,4 +1,5 @@
 use euclid::{rect, vec2, Rect, Size2D, Vector2D};
+use apollo::{LuaSerdeExt, Value};
 
 use crate::{
 	debug::{DebugCategory, DebugRendererImpl},
@@ -81,33 +82,33 @@ impl CollisionSystem {
 			test_collision(
 				physics.vel,
 				old_rect,
-				rect(0.0, -1.0, w, 1.0),
+				rect(0.0, -2.0, w, 2.0),
 				&mut collision.collisions,
 				debug,
 			);
 			test_collision(
 				physics.vel,
 				old_rect,
-				rect(-1.0, 0.0, 1.0, h),
+				rect(-2.0, 0.0, 2.0, h),
 				&mut collision.collisions,
 				debug,
 			);
 			test_collision(
 				physics.vel,
 				old_rect,
-				rect(w, 0.0, 1.0, h),
+				rect(w, 0.0, 2.0, h),
 				&mut collision.collisions,
 				debug,
 			);
 			test_collision(
 				physics.vel,
 				old_rect,
-				rect(0.0, h, w, 1.0),
+				rect(0.0, h, w, 2.0),
 				&mut collision.collisions,
 				debug,
 			);
 
-			collision.collisions.sort_unstable_by(|v0, v1| v0.1.total_cmp(&v1.1));
+			collision.collisions.sort_by(|v0, v1| v0.1.total_cmp(&v1.1));
 
 			for (pos, _) in &mut collision.collisions {
 				if let Some(Some((d, contact))) =
@@ -117,7 +118,7 @@ impl CollisionSystem {
 						debug,
 						DebugCategory::EntityCollision,
 						*pos,
-						0xc1c0c0,
+						0xff0000,
 						1.0,
 						1.0
 					);
@@ -126,6 +127,9 @@ impl CollisionSystem {
 						.to_vec2()
 						.component_mul(vec2(physics.accel.x.abs(), physics.accel.y.abs()));
 					collision.collided[contact] = true;
+					if let Some(callback) = &collision.hit_callback {
+						let _result: Value = callback.call((api.luna.lua.to_value(&contact).unwrap())).unwrap();
+					}
 				}
 			}
 		}

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use eyre::WrapErr;
-use mlua::{Function, Lua, LuaSerdeExt};
+use apollo::{Function, Lua, LuaSerdeExt};
 use rustaria::{
 	api::{
 		id_table::IdTable,
@@ -15,14 +15,12 @@ use rustaria::{
 		direction::{DirMap, Direction},
 		identifier::Identifier,
 	},
-	util::blake3::Hasher,
 	world::chunk::{
-		block::{Block, BlockInstance},
+		block::{BlockDesc, Block},
 		layer::BlockLayer,
 		ChunkLayer, ConnectionType,
 	},
 };
-use tracing::error_span;
 
 use crate::{
 	render::{
@@ -37,7 +35,7 @@ use crate::{
 };
 
 pub struct BlockLayerRenderer {
-	block_renderers: IdTable<Block, Option<BlockRenderer>>,
+	block_renderers: IdTable<BlockDesc, Option<BlockRenderer>>,
 	kind_descs: Vec<KindDesc>,
 }
 
@@ -45,12 +43,12 @@ impl BlockLayerRenderer {
 	pub fn mesh_chunk_layer(
 		&self,
 		chunk: ChunkPos,
-		layer: &ChunkLayer<BlockInstance>,
-		neighbors: DirMap<Option<&ChunkLayer<BlockInstance>>>,
+		layer: &ChunkLayer<Block>,
+		neighbors: DirMap<Option<&ChunkLayer<Block>>>,
 		builder: &mut MeshBuilder<PosTexVertex>,
 		debug: &mut Debug,
 	) {
-		let func = |tile: &BlockInstance| {
+		let func = |tile: &Block| {
 			self.block_renderers
 				.get(tile.id)
 				.as_ref()

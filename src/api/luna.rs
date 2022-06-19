@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use eyre::{Result, WrapErr};
-use mlua::{prelude::LuaError, Chunk, Lua, Table};
+use apollo::{prelude::LuaError, Chunk, Lua, Table, Value};
 use tracing::debug;
 
 use crate::{
@@ -9,7 +9,6 @@ use crate::{
 	ty::identifier::Identifier,
 };
 
-pub mod glue;
 pub mod lib;
 pub mod table;
 
@@ -30,7 +29,8 @@ impl Luna {
 		let resources = resources.clone();
 		searchers.raw_insert(
 			2,
-			lua.create_function(move |lua, mut location: Identifier| {
+			lua.create_function(move |lua, location: Value| {
+				let mut location = Identifier::new_lua(location)?;
 				location
 					.path
 					.write_str(".lua")
@@ -44,15 +44,12 @@ impl Luna {
 		Ok(Luna { lua })
 	}
 
-	pub fn load<'a>(&self, name: &Identifier, data: &'a [u8]) -> mlua::Result<Chunk<'a>> {
+	pub fn load<'a>(&self, name: &Identifier, data: &'a [u8]) -> apollo::Result<Chunk<'a>> {
 		Self::load_inner(&self.lua, name, data)
 	}
 
-	fn load_inner<'a>(lua: &Lua, name: &Identifier, data: &'a [u8]) -> mlua::Result<Chunk<'a>> {
-		lua.load(data).set_name(format!("{name}"))
+	fn load_inner<'a>(lua: &Lua, name: &Identifier, data: &'a [u8]) -> apollo::Result<Chunk<'a>> {
+		let chunk = lua.load(data);
+		chunk.set_name(format!("{name}"))
 	}
-}
-
-pub struct LunaFile {
-	data: Vec<u8>,
 }

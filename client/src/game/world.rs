@@ -74,6 +74,12 @@ impl ClientWorld {
 			ClientBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
 				self.place_block(api, pos, layer_id, block_id);
 			}
+			ClientBoundWorldPacket::SpawnEntity(entity, id) => {
+				self.inner.entities.storage.insert(api, entity, id);
+			}
+			ClientBoundWorldPacket::UpdateEntity(packet) => {
+				self.inner.entities.packet(&packet);
+			}
 		}
 		Ok(())
 	}

@@ -8,6 +8,13 @@ if reload.client then
                 origin = { -0.9, -1.4 },
                 size = { 1.8, 2.8 }
             }
+        },
+        ["arrow"] = {
+            image = "image/entity/glisco.png",
+            panel = {
+                origin = { -0.5, -0.5 },
+                size = { 1.0, 1.0 }
+            }
         }
     }
     reload.stargate.block_layer_renderer:register {
@@ -95,8 +102,10 @@ reload.stargate.entity:register {
             accel = { 0.0, 0.0 },
         },
         collision = {
-            origin = { -0.9, -1.4 },
-            size = { 1.8, 2.8 }
+            collision_box = {
+                origin = { -0.9, -1.4 },
+                size = { 1.8, 2.8 }
+            }
         },
         humanoid = {
             jump_amount = 15 / 60,
@@ -104,6 +113,25 @@ reload.stargate.entity:register {
             run_acceleration = 0.08 * 3.0,
             run_slowdown = 0.2 * 3.0,
             run_max_speed = 3.0 * 3.0,
+        },
+        gravity = {
+            amount = 1.0
+        }
+    },
+    ["arrow"] = {
+        position = { 0.0, 0.0 },
+        velocity = {
+            vel = { 0.5, 0.0 },
+            accel = { 0.0, 0.0 },
+        },
+        collision = {
+            collision_box = {
+                origin = { -0.55, -0.55 },
+                size = { 1.1, 1.1 }
+            },
+            hit_callback = function()
+                log.info("hi")
+            end
         },
         gravity = {
             amount = 1.0

@@ -77,6 +77,7 @@ impl Client {
 		let mut debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
 		//debug.enable(DebugCategory::TileSpread);
 		//debug.enable(DebugCategory::EntityCollision);
+		//debug.enable(DebugCategory::EntityVelocity);
 		//debug.enable(DebugCategory::ChunkMeshing);
 		//debug.enable(DebugCategory::ChunkBorders);
 		//

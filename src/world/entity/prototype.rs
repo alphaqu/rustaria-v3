@@ -1,19 +1,22 @@
 use hecs::{BuiltEntityClone, EntityBuilderClone};
-use tracing::error_span;
+use tracing::{error_span, info};
 
 use crate::{
 	api::{luna::table::LunaTable, prototype::Prototype},
 	ty::id::Id,
-	util::blake3::Hasher,
 	world::entity::component::{
 		CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent,
 		PositionComponent, PrototypeComponent,
 	},
 };
+use apollo::impl_macro::*;
 
 pub struct EntityDesc {
 	pub template: BuiltEntityClone,
 }
+
+#[lua_impl]
+impl EntityDesc {}
 
 #[derive(Debug)]
 pub struct EntityPrototype {
@@ -26,6 +29,7 @@ pub struct EntityPrototype {
 
 impl EntityPrototype {
 	pub fn bake(self, id: Id<Self>) -> EntityDesc {
+		info!("{self:?}");
 		let mut builder = EntityBuilderClone::new();
 		builder.add(self.position.clone());
 		builder.add(PrototypeComponent { id: id.build() });
@@ -57,7 +61,7 @@ impl Prototype for EntityPrototype {
 		Ok(EntityPrototype {
 			position: table.get_ser("position")?,
 			velocity: table.get_ser("velocity")?,
-			collision: table.get_ser("collision")?,
+			collision: table.get("collision")?,
 			humanoid: table.get_ser("humanoid")?,
 			gravity: table.get_ser("gravity")?,
 		})

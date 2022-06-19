@@ -1,6 +1,6 @@
 use std::ops::{Index, IndexMut};
 
-use block::BlockInstance;
+use block::Block;
 use layer::BlockLayer;
 
 use crate::{api::id_table::IdTable, ty::block_layer_pos::BlockLayerPos};
@@ -15,7 +15,7 @@ pub const CHUNK_SIZE_F32: f32 = CHUNK_SIZE as f32;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Chunk {
-	pub layers: IdTable<BlockLayer, ChunkLayer<BlockInstance>>,
+	pub layers: IdTable<BlockLayer, ChunkLayer<Block>>,
 }
 
 // Layer

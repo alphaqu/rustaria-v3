@@ -1,20 +1,20 @@
 use std::collections::HashMap;
 
 use eyre::ContextCompat;
-use mlua::{FromLua, Lua, Value};
+use apollo::{FromLua, Lua, Value};
 use rand::Rng;
 use rand_xoshiro::Xoroshiro64Star;
 
 use crate::{
 	api::util::lua_table,
 	ty::{block_pos::BlockPos, direction::Direction, id::Id, identifier::Identifier, Offset},
-	world::chunk::{block::Block, layer::BlockLayer},
+	world::chunk::{block::BlockDesc, layer::BlockLayer},
 	ChunkStorage, TPS,
 };
 
 pub struct BlockSpreader {
 	pub chance:        f32,
-	pub convert_table: HashMap<Id<Block>, Id<Block>>,
+	pub convert_table: HashMap<Id<BlockDesc>, Id<BlockDesc>>,
 }
 
 impl BlockSpreader {
@@ -58,7 +58,7 @@ impl BlockSpreader {
 
 pub struct SpreadResult {
 	pub keep:   bool,
-	pub spread: Option<(BlockPos, Id<Block>)>,
+	pub spread: Option<(BlockPos, Id<BlockDesc>)>,
 }
 
 #[derive(Debug)]
@@ -68,7 +68,7 @@ pub struct BlockSpreaderPrototype {
 }
 
 impl BlockSpreaderPrototype {
-	pub fn bake(self, blocks: &HashMap<Identifier, Id<Block>>) -> eyre::Result<BlockSpreader> {
+	pub fn bake(self, blocks: &HashMap<Identifier, Id<BlockDesc>>) -> eyre::Result<BlockSpreader> {
 		let mut convert_table = HashMap::new();
 		for (from, to) in &self.convert_table {
 			convert_table.insert(
@@ -89,7 +89,7 @@ impl BlockSpreaderPrototype {
 }
 
 impl FromLua for BlockSpreaderPrototype {
-	fn from_lua(lua_value: Value, _: &Lua) -> mlua::Result<Self> {
+	fn from_lua(lua_value: Value, _: &Lua) -> eyre::Result<Self> {
 		let table = lua_table(lua_value)?;
 		Ok(BlockSpreaderPrototype {
 			chance:        table.get("chance")?,

@@ -1,6 +1,6 @@
 //! Holds our luna interface
 use eyre::{Result, WrapErr};
-use mlua::Lua;
+use apollo::Lua;
 
 mod log;
 pub mod registry_builder;

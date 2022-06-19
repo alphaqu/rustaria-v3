@@ -4,6 +4,7 @@ use std::{
 };
 
 use crate::api::prototype::Prototype;
+use apollo::impl_macro::*;
 
 /// The internal id is a instance bound identifier to the registry,
 /// absolutely not forward/backwards compatible across versions or even game instances.
@@ -13,6 +14,7 @@ pub struct Id<P> {
 	prototype: PhantomData<P>,
 }
 
+#[lua_impl]
 impl<P> Id<P> {
 	// DO NOT EVEN THINK ABOUT MAKING THIS. THIS SHOULD ONLY BE MADE FROM THE REGISTRY ITS FROM
 	pub unsafe fn new(id: usize) -> Id<P> {
@@ -24,7 +26,7 @@ impl<P> Id<P> {
 
 	pub fn index(&self) -> usize { self.id as usize }
 
-	pub fn id(&self) -> u32 { self.id}
+	pub fn id(&self) -> u32 { self.id }
 }
 
 impl<P: Prototype> Id<P> {

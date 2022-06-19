@@ -1,8 +1,8 @@
-use crate::{api::luna::table::LunaTable, util::blake3::Hasher};
+use crate::{api::luna::table::LunaTable};
 
 pub trait Prototype
 where
-	Self: Sized + 'static,
+	Self: Sized + 'static + Send,
 {
 	type Output;
 	fn get_name() -> &'static str;

@@ -1,6 +1,5 @@
-use apollo::*;
-use mlua::prelude::LuaResult;
-
+use apollo::impl_macro::*;
+use eyre::Result;
 use crate::api::luna::lib::stargate::Stargate;
 
 pub struct Reload {
@@ -12,9 +11,9 @@ impl Reload {}
 
 #[lua_impl]
 impl Reload {
-	#[lua_field]
-	pub fn get_stargate(&mut self) -> LuaResult<&mut Stargate> { Ok(&mut self.stargate) }
+	#[lua_field(get stargate)]
+	pub fn get_stargate(&mut self) -> Result<&mut Stargate> { Ok(&mut self.stargate) }
 
-	#[lua_field]
-	pub fn get_client(&mut self) -> LuaResult<bool> { Ok(self.client) }
+	#[lua_field(get client)]
+	pub fn get_client(&mut self) -> Result<bool> { Ok(self.client) }
 }

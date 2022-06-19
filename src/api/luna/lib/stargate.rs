@@ -1,8 +1,9 @@
 use std::{collections::HashMap, time::Instant};
 
-use apollo::*;
-use eyre::WrapErr;
-use mlua::{prelude::LuaResult, Error, Lua};
+use apollo::impl_macro::*;
+use eyre::{ContextCompat, WrapErr};
+use apollo::{Lua};
+use eyre::Result;
 
 use crate::{
 	api::{
@@ -10,7 +11,6 @@ use crate::{
 		prototype::Prototype,
 		registry::Registry,
 	},
-	util::blake3::Hasher,
 };
 
 /// Creates a carrier
@@ -49,9 +49,7 @@ impl Stargate {
 #[lua_impl]
 impl Stargate {
 	#[lua_method]
-	pub fn __index(&mut self, name: String) -> LuaResult<&mut LuaRegistryBuilder> {
-		self.builders.get_mut(&name).ok_or_else(|| {
-			Error::external(format!("Registry {} does not exist in this context.", name))
-		})
+	pub fn __index(&mut self, name: String) -> Result<&mut LuaRegistryBuilder> {
+		self.builders.get_mut(&name).wrap_err_with(|| format!("Registry {} does not exist in this context.", name))
 	}
 }

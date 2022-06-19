@@ -1,8 +1,9 @@
 use std::{any::type_name, fmt::Display};
 
 use eyre::{Context, Result};
-use mlua::{FromLua, Lua, LuaSerdeExt, Table, ToLua};
+use apollo::{FromLua, Lua, LuaSerdeExt, Table, ToLua};
 use serde::Deserialize;
+use crate::ty::identifier::Identifier;
 
 pub struct LunaTable<'a> {
 	pub lua: &'a Lua,
@@ -11,6 +12,12 @@ pub struct LunaTable<'a> {
 
 impl<'a> LunaTable<'a> {
 	pub fn get<K: ToLua + Display + Clone, V: FromLua>(&self, key: K) -> Result<V> {
+		self.table
+			.get(key.clone())
+			.wrap_err_with(|| format!("Getting field \"{}\"", key))
+	}
+
+	pub fn get_ident<K: ToLua + Display + Clone>(&self, key: K) -> Result<Identifier> {
 		self.table
 			.get(key.clone())
 			.wrap_err_with(|| format!("Getting field \"{}\"", key))

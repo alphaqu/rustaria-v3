@@ -1,5 +1,5 @@
 use eyre::Result;
-use hecs::{Component, DynamicBundle, Entity, EntityBuilder, EntityBuilderClone, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
+use hecs::{Component, DynamicBundle, DynamicBundleClone, Entity, EntityBuilder, EntityBuilderClone, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
 
 use crate::{
 	api::Api,
@@ -14,7 +14,7 @@ use crate::{
 	},
 	ChunkStorage,
 };
-use crate::world::entity::component::PrototypeComponent;
+use crate::world::entity::system::network::{EntityPacket, NetworkSystem};
 
 pub mod component;
 pub mod prototype;
@@ -40,7 +40,7 @@ impl EntityStorage {
 			.spawn_at(entity, &api.carrier.entity.get(id).template)
 	}
 
-	pub fn insert_raw(&mut self, entity: Entity, components: impl DynamicBundle) {
+	pub fn put_comp(&mut self, entity: Entity, components: impl DynamicBundle) {
 		self.world.spawn_at(entity, components)
 	}
 
@@ -94,6 +94,7 @@ pub struct EntityWorld {
 	gravity: GravitySystem,
 	collision: CollisionSystem,
 	humanoid: HumanoidSystem,
+	network: NetworkSystem,
 }
 
 impl EntityWorld {
@@ -104,6 +105,7 @@ impl EntityWorld {
 			gravity: GravitySystem,
 			collision: CollisionSystem,
 			humanoid: HumanoidSystem,
+			network: NetworkSystem
 		})
 	}
 
@@ -112,5 +114,9 @@ impl EntityWorld {
 		self.humanoid.tick(&mut self.storage);
 		self.collision.tick(api, &mut self.storage, chunks, debug);
 		self.velocity.tick(&mut self.storage, debug);
+	}
+
+	pub fn packet(&mut self, packet: &EntityPacket) {
+		self.network.apply(&mut self.storage, packet);
 	}
 }
